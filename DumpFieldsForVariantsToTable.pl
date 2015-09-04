@@ -56,10 +56,10 @@ sub AccumulateFieldsVCF{
 		
 		for my $F (keys(%{$x->{'INFO'}})){
 			next if($F =~ /_[0123456789]$/);
-			$FieldInfo{'F'}{$F}++;
+			$FieldInfo{'F'}{$F}++ if(defined($F) && $F ne "");
 		}
 		for my $GF (@{$x->{'FORMAT'}}){
-			$FieldInfo{'GF'}{$GF}++;
+			$FieldInfo{'GF'}{$GF}++ if(defined($GF) && $GF ne "");
 		}
 		#print {$out} $vcf->format_line($x);
 		
