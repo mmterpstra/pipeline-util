@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use Scalar::Util qw /looks_like_number/; 
 my $use = <<"END";
 	calculates filtering flags for vcf files:
 		per Patient specified by Gerard te Meerman and stored in the general info fields:
@@ -150,7 +151,13 @@ while($line=<$in>){
 				my @indexesTumor;
 				@indexesTumor=getDifferentIndexesB($formatInfo{$Normal}{'GT'},$formatInfo{$sampleField}{'GT'});
 				#warn "return value of formatInfo.Normal.'AD.indexesTumor':" . join(",",$formatInfo{$Normal}{'ADi'}{@indexesTumor})."\n";
-				$info{"Somatic"} = 'true' if($normalGenotypeIndexes[0] eq $normalGenotypeIndexes[1] && $formatInfo{$sampleField}{'GT'} ne '0/0' &&(max($formatInfo{$Normal}{'ADi'}{@indexesTumor})==0|| max($formatInfo{$Normal}{'ADi'}{@indexesTumor})/Sum(split(',',$formatInfo{$Normal}{'AD'})) < 0.05  ));
+				
+				$info{"Somatic"} = 'true' if($normalGenotypeIndexes[0] eq $normalGenotypeIndexes[1] && \
+									$formatInfo{$sampleField}{'GT'} ne '0/0' && \
+									looks_like_number(max($formatInfo{$Normal}{'ADi'}{@indexesTumor})) && \
+									looks_like_number(Sum(split(',',$formatInfo{$Normal}{'AD'}))) && \
+									(max($formatInfo{$Normal}{'ADi'}{@indexesTumor}) == 0 || \
+										max($formatInfo{$Normal}{'ADi'}{@indexesTumor}) / Sum(split(',',$formatInfo{$Normal}{'AD'})) < 0.025  ));
 				$info{"IsChangeInTumor"} = 'true';
 				$info{"IsChangeInTumorGQnormal"} = $formatInfo{$Normal}{'GQ'};
 				$info{"IsChangeInTumorGQtumor"} = $formatInfo{$sampleField}{'GQ'} if(not(defined($info{"IsChangeInTumorGQtumor"}))||$info{"IsChangeInTumorGQtumor"} < $formatInfo{$sampleField}{'GQ'});
@@ -247,9 +254,9 @@ while($line=<$in>){
 	my @DPs;
 	map{push(@DPs, $formatInfo{$_}{'DP'}) if(defined($formatInfo{$_}{'DP'}) && $formatInfo{$_}{'DP'} ne "")}(@samples);
 	#warn @DPs;
-	$info{"MeanDP"} = Mean(@DPs) if(defined($formatInfo{$_}{'DP'}) && $formatInfo{$_}{'DP'} ne "");
+	$info{"MeanDP"} = Mean(@DPs) if(defined($DPs[0]) && $DPs[0] ne "");
 	
-	$info{"MinDP"}  = min(@DPs) if(defined($formatInfo{$_}{'DP'}) && $formatInfo{$_}{'DP'} ne "");
+	$info{"MinDP"}  = min(@DPs) if(defined($DPs[0]) && $DPs[0] ne "");
 	
 	#$formatInfo{"AD"}=join(",",calcADvals($formatInfo{"DP"},$formatInfo{"EC"}));
 	#delete $formatInfo{"EC"};
@@ -276,15 +283,20 @@ sub max {
 }
 sub min {
     my ($min, @vars) = @_;
-    for (@vars) {
-        $min = $_ if $_ < $min;
+    while((not(defined($min)) || $min eq "." ) && scalar(@vars) > 0){
+        $min = shift(@vars);
+    }
+    if(scalar(@vars) > 0){
+         for (@vars) {
+              $min = $_ if((defined($_) && $_ ne ".")&& $_ < $min);;
+         }
     }
     return $min;
 }
 sub Sum {
 	my $sum =0;
 	for (@_){
-		$sum += $_;
+		$sum += $_ if(defined($_) && $_ ne ".");
 	}
 	return $sum;
 }
@@ -292,7 +304,7 @@ sub Mean {
 	my $count = scalar(@_);
 	my $sum = 0;
 	for (@_){
-		$sum += $_ if($_);
+		$sum += $_ if(defined($_) && $_ ne ".");
 	}
 	my $mean=$sum/$count;
 	return $mean;
@@ -408,14 +420,20 @@ sub formatPrinter {
 	while($count < $formatData{'sampleCount'}){
 		my $perSampleTekst="";
 
-		if($formatData{ $formatData{'sampleNames'}{$count} }{'GT'} ne './.'){
+		if($formatData{ $formatData{'sampleNames'}{$count} }{'GT'} && $formatData{ $formatData{'sampleNames'}{$count} }{'GT'} ne './.'){
 			$formatText = "";#or else nonsensical format tekst
 			for my $tmp (@usedFormatOrder){
 				warn "tmp:".$tmp if(not(defined($tmp)));
-				warn "formatData $tmp is missing:".$formatData{ $formatData{'sampleNames'}{$count} }{$tmp} if(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp})));
-				if($formatData{ $formatData{'sampleNames'}{$count} }{$tmp} eq 'true' && $formatText eq ""){
+				#warn "formatData $tmp is missing sample:".$formatData{'sampleNames'}{$count}  if(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp})));
+				if(defined( $formatData{ $formatData{'sampleNames'}{$count} }{$tmp} ) && $formatData{ $formatData{'sampleNames'}{$count} }{$tmp} eq 'true' && $formatText eq ""){
 					$formatText = $tmp;
 					$perSampleTekst = $tmp;
+				}elsif(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp})) && $formatText eq ""){
+					$formatText = $tmp;
+					$perSampleTekst = '.';
+				}elsif(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp}))){
+					$formatText = ':'.$tmp;
+					$perSampleTekst = ':.';
 				}elsif($formatData{ $formatData{'sampleNames'}{$count} }{$tmp} eq 'true'){
 					$formatText = $formatText.':'.$tmp;
 					$perSampleTekst = $perSampleTekst.':'.$tmp;
