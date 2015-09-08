@@ -432,8 +432,8 @@ sub formatPrinter {
 					$formatText = $tmp;
 					$perSampleTekst = '.';
 				}elsif(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp}))){
-					$formatText = ':'.$tmp;
-					$perSampleTekst = ':.';
+					$formatText = $formatText.':'.$tmp;
+					$perSampleTekst = $perSampleTekst.':'.$tmp;
 				}elsif($formatData{ $formatData{'sampleNames'}{$count} }{$tmp} eq 'true'){
 					$formatText = $formatText.':'.$tmp;
 					$perSampleTekst = $perSampleTekst.':'.$tmp;
