@@ -18,8 +18,10 @@ my actual use:
 terpstramm\@Biolinux:~/Documents/gccclusterdata/data/projects/exomeseq/privsmeta/privsmeta/CNV\$ 
 for i in $(ls S12_193_*.called);
 	do perl /home/terpstramm/workspace/PlotGenome/PlotFloatsOnInterVals.pl -v ../../forGerard/s12-193.refilter.snps.Z.vcf.table \$i > S12_193_14.called.Rscript;
-	Rscript \$i.Rscript ;
+i.Rscript ;
 done
+
+
 END
 
 #R needs to be installed
@@ -28,13 +30,14 @@ END
 
 #$ARGV[0] = '/home/terpstramm/Documents/gccclusterdata/data/projects/exomeseq/privsmeta/privsmeta/CNV/S12_193_3.called';
 getopts( 'r:d:v:R:', \%opts );
-print Dumper(%opts);
+print Dumper(\%opts);
 my $Dict = $opts{'d'};
 
 my %ChrLenData = ReadDict($Dict);
 my $interval   = $opts{'r'};
 
-my $RscriptBin = $opts{'R'};
+my $RscriptBin = "Rscript ";
+$RscriptBin = $opts{'R'};
 
 if ( not($interval) && $opts{'v'} && -e $opts{'v'} && -e $ARGV[0] ) {
 	MakeVarscanDataTable( $ARGV[0], %ChrLenData );
@@ -186,11 +189,12 @@ sub DoMedianNormalisationAndDNAcopy{
 	my $dataTable = shift @_;
 	my $shortname = basename($dataTable,'.cn.called','.Varscan2copyCaller.called','.40.called','.called','.Varscan2copyCaller');
 	my $dirname = dirname($dataTable);
+	warn $dirname;	
 	warn "Skipped DNAcopy because output is already present, if not please remove: '$shortname.seg.table'\n"&& return "$shortname.seg.table" if(-e "${dirname}$shortname.seg.table" && -s "${dirname}$shortname.seg.table");
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -213,15 +217,16 @@ smoothed.VarscanDat.CNA.object <- smooth.CNA(VarscanDat.CNA.object)
 segment.smoothed.VarscanDat.CNA.object <- segment(smoothed.VarscanDat.CNA.object, min.width=2, weights=VarscanDat\$max.diff, verbose=1, undo.splits="sdundo", undo.SD=0.5)
 #, undo.splits="sdundo", undo.SD=0.5
 
-write.table(segment.smoothed.VarscanDat.CNA.object\$out, file="${dirname}${shortname}.seg", quote=FALSE,  sep="\\t", row.names=FALSE)
+write.table(segment.smoothed.VarscanDat.CNA.object\$out, file="${dirname}/${shortname}.seg", quote=FALSE,  sep="\\t", row.names=FALSE)
 
 #segment.VarscanDat.CNA.object <- segment(VarscanDat.CNA.object, min.width=2, weights=VarscanDat\$max.diff, verbose=1, undo.splits="sdundo", undo.SD=0.5)
-#write.table(segment.VarscanDat.CNA.object\$out, file="${dirname}${shortname}.seg",  sep="\\t", row.names=FALSE)
+#write.table(segment.VarscanDat.CNA.object\$out, file="${dirname}/${shortname}.seg",  sep="\\t", row.names=FALSE)
 END
 	open(my $out,">","${dirname}${shortname}.rscript");
 	print $out $rscript;
 	close $out;
-	warn "running DNAcopy...\n".`Rscript ${dirname}${shortname}.rscript`;
+	my $cmd = "$RscriptBin ${dirname}${shortname}.rscript";
+	warn "\nRunning DNAcopy '$cmd'\n".`$cmd`;
 #	$shortname.seg;
 	open( my $SegHandle, '<', "${dirname}${shortname}.seg" )
 	  or die "cannot read DNAcopy.seg file '${dirname}$shortname.seg' ";
@@ -250,7 +255,7 @@ sub MakePDFrscript {
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -311,7 +316,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`Rscript $dataTable.Rscript`;
+	my $ret=`$RscriptBin $dataTable.Rscript`;
 	warn $ret;
 
 }
@@ -323,8 +328,8 @@ sub MakePDFrscript2 {
 
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
-DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -388,7 +393,7 @@ END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
 	
-	my $Rcmd="Rscript $dataTable.Rscript";
+	my $Rcmd="$RscriptBin $dataTable.Rscript";
 	warn $Rcmd;
 	
 	my $ret=`$Rcmd`;
@@ -441,8 +446,8 @@ sub MakePDFrscriptByInterval {
 	my ( $chrom, $start, $end ) = split( ',', shift(@_) );
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
-VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -548,8 +553,8 @@ sub MakePDFrscriptWithVCF {
 
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
-VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -614,7 +619,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`Rscript $dataTable.Rscript`;
+	my $ret=`$RscriptBin $dataTable.Rscript`;
 	warn $ret;
 
 }
@@ -631,9 +636,9 @@ sub MakePDFrscriptWithVCF2 {
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
-VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE)
-DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+DNAcopySegDat <- read.table("$dirname/$segTable", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 
 #median centering
@@ -713,7 +718,7 @@ END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
 	warn "rscript:".$dataTable.".Rscript";
-	my $ret=`Rscript $dataTable.Rscript`;
+	my $ret=`$RscriptBin $dataTable.Rscript`;
 	warn $ret;
 
 }
@@ -727,10 +732,10 @@ sub MakePDFrscriptByIntervalWithVcf2 {
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE)
-VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE)
-VariantDat <- read.table("$VcfTable.table", sep="\\t", header=TRUE)
-DNAcopySegDat <- read.table("${segTable}.byInterval.seg", sep="\\t", header=TRUE)
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VariantDat <- read.table("$VcfTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+DNAcopySegDat <- read.table("${segTable}.byInterval.seg", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 head(DNAcopySegDat)
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -798,7 +803,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`Rscript $dataTable.Rscript`;
+	my $ret=`$RscriptBin $dataTable.Rscript`;
 	warn $ret;
 
 }
@@ -808,6 +813,7 @@ sub MakeVarscanDataTableByInterval2 {
 	open( my $Varscan2CopyCallerHomsHandle, '<', $_[0] . '.homdels' )
 	  or die "cannot read Varscan2CopyCaller file '$_[0]' ";
 	open( my $Varscan2CopyCallerOutIntervalHandle,'>', $_[0] . '.interval.table' ) or die "cannot write: ".$_[0] . '.interval.table';
+	my $dirname = dirname($_[0]);	
 	shift @_;
 	my ( $chrom, $start, $end ) = split( ',', shift(@_) );
 	#my %ChrLenData = @_;
@@ -841,8 +847,8 @@ sub MakeVarscanDataTableByInterval2 {
 		}
 	}
 	my $segTable = shift(@_);
-	open( my $segTableHandle, '<', $segTable) or die "cannot read : $segTable";
-	open( my $segTableOutHandle, '>', $segTable.'.byInterval.seg') or die "cannot write : ".$segTable.'.byInterval.seg';
+	open( my $segTableHandle, '<', ${dirname}."/".$segTable) or die "cannot read : $segTable";
+	open( my $segTableOutHandle, '>',  ${dirname}."/".$segTable.'.byInterval.seg') or die "cannot write : ".$segTable.'.byInterval.seg';
 	my $segHeader = <$segTableHandle>;
 	print $segTableOutHandle 'offsetStart' . "\t" . 'offsetEnd' . "\t" . $segHeader;
 	while ( my @tabdelim = split( "\t", <$segTableHandle> ) ) {
@@ -885,10 +891,11 @@ sub basename {
 sub dirname {
 	my $name = shift(@_) or die "invalid input basename";
 	#my @exts = @_;
-	$name =~ s!^(.*/).*!$1!;#remove basename;
+	my $dir = $name;
+	$dir =~ s!^(.*/).*!$1!;#remove basename;
 	#for my $ext (@exts){
 	#	$name =~ s!$ext$!!g;
 	#}
-	warn "dirname:$name";
-	return $name;
+	#warn "dirname:$dir";
+	return $dir;
 }
