@@ -638,7 +638,7 @@ sub MakePDFrscriptWithVCF2 {
 #load data
 VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-DNAcopySegDat <- read.table("$dirname/$segTable", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
 
 
 #median centering
