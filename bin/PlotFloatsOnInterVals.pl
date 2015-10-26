@@ -194,7 +194,7 @@ sub DoMedianNormalisationAndDNAcopy{
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -255,7 +255,7 @@ sub MakePDFrscript {
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -328,8 +328,8 @@ sub MakePDFrscript2 {
 
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -446,8 +446,8 @@ sub MakePDFrscriptByInterval {
 	my ( $chrom, $start, $end ) = split( ',', shift(@_) );
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -553,8 +553,8 @@ sub MakePDFrscriptWithVCF {
 
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
 
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -636,9 +636,9 @@ sub MakePDFrscriptWithVCF2 {
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="")
 
 
 #median centering
@@ -732,10 +732,10 @@ sub MakePDFrscriptByIntervalWithVcf2 {
 	
 	my $rscript = <<"END";
 #load data
-VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-VariantDat <- read.table("$VcfTable.table", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
-DNAcopySegDat <- read.table("${segTable}.byInterval.seg", sep="\\t", header=TRUE, fill=NA, quote="", quote="")
+VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="")
+VariantDat <- read.table("$VcfTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
+DNAcopySegDat <- read.table("${segTable}.byInterval.seg", sep="\\t", header=TRUE, fill=NA, quote="")
 head(DNAcopySegDat)
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
@@ -847,8 +847,11 @@ sub MakeVarscanDataTableByInterval2 {
 		}
 	}
 	my $segTable = shift(@_);
-	open( my $segTableHandle, '<', ${dirname}."/".$segTable) or die "cannot read : $segTable";
-	open( my $segTableOutHandle, '>',  ${dirname}."/".$segTable.'.byInterval.seg') or die "cannot write : ".$segTable.'.byInterval.seg';
+	#	open( my $segTableHandle, '<', $segTable) or die "cannot read : $segTable";
+	open( my $segTableHandle, '<', $segTable) or die "cannot read : $segTable";
+	
+	#open( my $segTableOutHandle, '>',  $segTable.'.byInterval.seg') or die "cannot write : ".$segTable.'.byInterval.seg';
+	open( my $segTableOutHandle, '>',  $segTable.'.byInterval.seg') or die "cannot write : ".$segTable.'.byInterval.seg';
 	my $segHeader = <$segTableHandle>;
 	print $segTableOutHandle 'offsetStart' . "\t" . 'offsetEnd' . "\t" . $segHeader;
 	while ( my @tabdelim = split( "\t", <$segTableHandle> ) ) {
