@@ -272,8 +272,8 @@ abline(a=log(x=2,base=2),b=0, col="red")
 abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
-abline(a=log(x=0.25,base=2),b=0, col="black")
-legend("bottomright", title="copynumber relative to normal",c("4n","3n","2n","1n","0n"), fill=c("red","orange","green","blue","black"), horiz=TRUE)
+abline(a=log(x=0.25,base=2),b=0, col="yellow")
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=("-","-","-","-","-","."), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
@@ -346,12 +346,12 @@ abline(a=log(x=2,base=2),b=0, col="red")
 abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
-abline(a=log(x=0.25,base=2),b=0, col="black")
+abline(a=log(x=0.25,base=2),b=0, col="yellow")
 segments(DNAcopySegDat\$start,DNAcopySegDat\$seg.mean,DNAcopySegDat\$end,DNAcopySegDat\$seg.mean, col="black")
 ###i'm here^^^^^^^^^^^
 #
 
-legend("bottomright", title="copynumber relative to normal",c("4n","3n","2n","1n","0n","detected"), fill=c("red","orange","green","blue","black","grey"), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe","detected"), fill=c("red","orange","green","blue","yellow","grey","black"), pch=("-","-","-","-","-",".","-"), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
@@ -460,8 +460,8 @@ abline(a=log(x=2,base=2),b=0, col="red")
 abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
-abline(a=log(x=0.25,base=2),b=0, col="black")
-legend("bottomright", title="copynumber relative to normal",c("4n","3n","2n","1n","0n"), fill=c("red","orange","green","blue","black"), horiz=TRUE)
+abline(a=log(x=0.25,base=2),b=0, col="yellow")
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=("-","-","-","-","-","."), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
@@ -569,8 +569,8 @@ abline(a=log(x=2,base=2),b=0, col="red")
 abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
-abline(a=log(x=0.25,base=2),b=0, col="black")
-legend("bottomright", title="copynumber relative to normal",c("4n","3n","2n","1n","0n"), fill=c("red","orange","green","blue","black"), horiz=TRUE)
+abline(a=log(x=0.25,base=2),b=0, col="yellow")
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=("-","-","-","-","-","."), horiz=TRUE)
 
 END
 	my $i = 0;
@@ -665,10 +665,10 @@ abline(a=log(x=2,base=2),b=0, col="red")
 abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
-abline(a=log(x=0.25,base=2),b=0, col="black")
+abline(a=log(x=0.25,base=2),b=0, col="yellow")
 segments(DNAcopySegDat\$start,DNAcopySegDat\$seg.mean,DNAcopySegDat\$end,DNAcopySegDat\$seg.mean, col="black")
 
-legend("bottomright", title="copynumber relative to normal",c("4n","3n","2n","1n","0n","detected"), fill=c("red","orange","green","blue","black","grey"), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe","detected"), fill=c("red","orange","green","blue","yellow","grey","black"), pch=("-","-","-","-","-",".","-"), horiz=TRUE)
 
 END
 	my $i = 0;
@@ -755,8 +755,8 @@ abline(a=log(x=2,base=2),b=0, col="red")
 abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
-abline(a=log(x=0.25,base=2),b=0, col="black")
-legend("bottomright", title="copynumber relative to normal",c("4n","3n","2n","1n","0n"), fill=c("red","orange","green","blue","black"), horiz=TRUE)
+abline(a=log(x=0.25,base=2),b=0, col="yellow")
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=("-","-","-","-","-","."), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
