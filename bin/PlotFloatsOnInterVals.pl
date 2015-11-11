@@ -555,7 +555,7 @@ sub MakePDFrscriptWithVCF {
 #load data
 VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
 VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
-VariantDat<-subset(VariantDat, MinDP > 5)
+VariantDat<-subset(VariantDat, ${shortname}.DP > 20)
 #median centering
 median <- quantile(VarscanDat\$adjusted_log_ratio, .5)
 VarscanDat\$adjusted_log_ratio <- VarscanDat\$adjusted_log_ratio - median
@@ -638,7 +638,7 @@ sub MakePDFrscriptWithVCF2 {
 #load data
 VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
 VariantDat <- read.table("$variantTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
-VariantDat<-subset(VariantDat, MinDP > 5)
+VariantDat<-subset(VariantDat, ${shortname}.DP > 20)
 
 DNAcopySegDat <- read.table("$segTable", sep="\\t", header=TRUE, fill=NA, quote="")
 
@@ -737,7 +737,7 @@ sub MakePDFrscriptByIntervalWithVcf2 {
 VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
 VarscanIntervalDat <- read.table("$dataTable.interval.table", sep="\\t", header=TRUE, fill=NA, quote="")
 VariantDat <- read.table("$VcfTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
-VariantDat<-subset(VariantDat, MinDP > 5)
+VariantDat<-subset(VariantDat, ${shortname}.DP > 20)
 
 DNAcopySegDat <- read.table("${segTable}.byInterval.seg", sep="\\t", header=TRUE, fill=NA, quote="")
 head(DNAcopySegDat)
