@@ -31,6 +31,9 @@ END
 #$ARGV[0] = '/home/terpstramm/Documents/gccclusterdata/data/projects/exomeseq/privsmeta/privsmeta/CNV/S12_193_3.called';
 getopts( 'r:d:v:R:', \%opts );
 print Dumper(\%opts);
+if (! -e $ARGV[0] ) {
+	warn $use."failed wit opts'".Dumper(\%opts)."' and ARGV:$ARGV[0]";warn $use && die;
+}
 my $Dict = $opts{'d'};
 
 my %ChrLenData = ReadDict($Dict);
@@ -273,7 +276,7 @@ abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
 abline(a=log(x=0.25,base=2),b=0, col="yellow")
-legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=c("-","-","-","-","-","."), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
@@ -351,7 +354,7 @@ segments(DNAcopySegDat\$start,DNAcopySegDat\$seg.mean,DNAcopySegDat\$end,DNAcopy
 ###i'm here^^^^^^^^^^^
 #
 
-legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe","detected"), fill=c("red","orange","green","blue","yellow","grey","black"), pch=c("-","-","-","-","-",".","-"), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe","detected"), fill=c("red","orange","green","blue","yellow","grey","black"), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
@@ -461,7 +464,7 @@ abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
 abline(a=log(x=0.25,base=2),b=0, col="yellow")
-legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=c("-","-","-","-","-","."), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
@@ -570,7 +573,7 @@ abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
 abline(a=log(x=0.25,base=2),b=0, col="yellow")
-legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=c("-","-","-","-","-","."), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), horiz=TRUE)
 
 END
 	my $i = 0;
@@ -668,7 +671,7 @@ abline(a=log(x=0.5,base=2),b=0, col="blue")
 abline(a=log(x=0.25,base=2),b=0, col="yellow")
 segments(DNAcopySegDat\$start,DNAcopySegDat\$seg.mean,DNAcopySegDat\$end,DNAcopySegDat\$seg.mean, col="black")
 
-legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe","detected"), fill=c("red","orange","green","blue","yellow","grey","black"), pch=c("-","-","-","-","-",".","-"), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe","detected"), fill=c("red","orange","green","blue","yellow","grey","black"), horiz=TRUE)
 
 END
 	my $i = 0;
@@ -731,7 +734,8 @@ sub MakePDFrscriptByIntervalWithVcf2 {
 	my ( $chrom, $start, $end ) = split( ',', shift(@_) );
 	my $segTable = shift(@_);
 	my $VcfTable = shift(@_);
-	
+	$shortname =~ s/\-/./g;
+	$shortname =~ s/(^\d+)/X$1/g;
 	my $rscript = <<"END";
 #load data
 VarscanDat <- read.table("$dataTable.table", sep="\\t", header=TRUE, fill=NA, quote="")
@@ -756,7 +760,7 @@ abline(a=log(x=1.5,base=2),b=0, col="orange")
 abline(a=log(x=1,base=2),b=0, col="green")
 abline(a=log(x=0.5,base=2),b=0, col="blue")
 abline(a=log(x=0.25,base=2),b=0, col="yellow")
-legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), pch=c("-","-","-","-","-","."), horiz=TRUE)
+legend("bottomright",title="copynumber relative to normal",c("4n","3n","2n","1n","0n","probe"), fill=c("red","orange","green","blue","yellow","grey"), horiz=TRUE)
 END
 	my $i = 0;
 	my @at;
