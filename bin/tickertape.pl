@@ -36,7 +36,9 @@ sub main{
 		$record = DumbReader($_);
 		
 		if(my $fq = TrimReadByProbe($record)){
-			print WriteFastq($fq);
+			if(GetFqLength($fq) >= 20){
+				print WriteFastq($fq);
+			}
 		}
 		#die Dumper($record) if($. > 100);
 	}
@@ -160,7 +162,17 @@ sub IsPrimaryAlignment {
 		return 1;
 	}
 }
-
+sub IsReverseAlignment {
+	my $r=shift(@_);
+	
+	if((GetFlagRead($r) & 16)){
+		
+		return 1;
+	}else{
+		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);	
+		return 0;
+	}
+}
 sub DumbReader{
 	$_= shift(@_);
 	chomp;
@@ -267,7 +279,7 @@ sub GetBestOverlap{
 sub Get3PrimeOverlap{
 	my $r= shift(@_);
 	my $overlap=0;
-	my $wiggle = 0;
+	my $wiggle = 2;
 	
 	if(	GetStrandRead($r) ne GetStrandProbe($r) 
 		&& GetStrandRead($r) ne '.'
@@ -310,6 +322,11 @@ sub TrimReadByProbe{
 		$fq->[0] = GetHeaderRead($r);
 		$fq->[1] = GetSeqRead($r);
 		$fq->[2] = GetQualRead($r);
+		
+		if(IsReverseAlignment($r)){
+			$fq=ReverseComplementFq($fq);
+		}
+		
 		if($overlap){
 			my $trimOffset = CalcTrim($overlap,$r);
 			TrimFq($trimOffset,$fq);
@@ -319,6 +336,16 @@ sub TrimReadByProbe{
 	}else{
 		return undef;
 	}
+}
+sub ReverseComplementFq {
+	my $fq = shift(@_);
+	
+	$fq->[1] = reverse($fq->[1]);
+	$fq->[1] =~ tr/ATCGNatcgn/TAGCNtagcn/;
+	
+	$fq->[2] = reverse($fq->[2]);
+	
+	return $fq;
 }
 sub TrimFq{
 	my $trim = shift(@_);
@@ -334,15 +361,22 @@ sub CalcTrim{
 	my $overlap = shift(@_);
 	my $r= shift(@_);
 	my $cigar;
-	$cigar= CigarReader($r);
+	$cigar = CigarReader($r);
 	my $trimbasesright=0;
 	my $ref;
 	#warn "####ref#overl".$ref.'#'.$overlap;
 	
 	#die id=zfsmsljhrbhfxkjzdhsbrvfkjhzkjhfxdzkjhbf
 	#fix this should
+	#die "[FATAL] $0::CalcTrim : DUMPER";
 	
-	while((my $ref = pop(@{$cigar})) && $overlap >= 0){
+	while(scalar(@{$cigar}) && $overlap >= 0){
+		#sam format spec
+		if(IsReverseAlignment($r)){
+			$ref = shift(@{$cigar});
+		}else{
+			$ref = pop(@{$cigar});
+		}
 		my $operation;
 		my $amount;
 		#warn "ref#overl".$ref.'#'.$overlap;
@@ -359,6 +393,9 @@ sub CalcTrim{
 			
 		}elsif($operation =~ /^[IS]$/){
 			$trimbasesright += $amount;
+		}elsif($operation =~ /^[D]$/){
+			#only reduce overlap not increment trimbases left
+			$overlap-=$amount;
 		}
 	}
 	
@@ -402,4 +439,15 @@ sub WriteFastq {
 	#$fastq->[0]=$seqHeader;
 	#$fastq->[2]=$qual;
 }
+
+sub GetFqLength {
+	my $fq = shift(@_);
+	
+	if( length($fq->[1]) == length($fq->[2]) ){
+		return length($fq->[1]);
+	}
+	#else
+	die "[FATAL] inconsistent read/qual in 'getFqLength' while working on fq:".Dumper($fq);
+}
+
 
