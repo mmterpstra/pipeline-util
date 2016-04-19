@@ -50,6 +50,7 @@ made especially for 3 prime mrna-seq and derived protocols
 
 - Trims sequences based on mapping location and specified bed files. Neatly trims off 'landing probes' used in the 
 Nugene protocol. Wrapper script using 'tickerRefine.pl' and 'tickertape.pl' they need to be in the same folder for it to work, also 'bwa mem' , samtools and bedtools should be available in path
+- Now has an experimental option to specify samfile instead of letting 'bwa mem' doing the dirty work, not everything ending with '.sam' should work though.
 
 ## AddAlleleFrequenciesToSeg.pl
 
