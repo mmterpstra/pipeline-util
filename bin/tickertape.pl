@@ -119,7 +119,7 @@ sub GetSeqRead{
 		$ret = $r -> [29];# or die 'Record does not contain this many fields!';
 	}
 	#
-	die $ret.Dumper($r)."$." if(! ($ret =~ /^[ATCGNatcgn]*$/));
+	die $ret.Dumper($r)."$." if(!(defined($ret) && ($ret =~ /^[ATCGNatcgn]*$/)));
 	return($ret);
 	
 	#return($r -> [28]);# or die 'Record does not contain this many fields!'.Dumper($r);	
@@ -135,6 +135,7 @@ sub GetFlagRead{
 		$ret = $r -> [21];# or die 'Record does not contain this many fields!';
 	}
 	#
+	defined($ret) or die "Invalid record at line ". $. .": ".Dumper($r);
 	return($ret);
 	#return($r -> [20]);# or die 'Record does not contain this many fields!'.Dumper($r);	
 }
@@ -279,7 +280,7 @@ sub GetBestOverlap{
 sub Get3PrimeOverlap{
 	my $r= shift(@_);
 	my $overlap=0;
-	my $wiggle = 2;
+	my $wiggle = 5;
 	
 	if(	GetStrandRead($r) ne GetStrandProbe($r) 
 		&& GetStrandRead($r) ne '.'
@@ -443,7 +444,7 @@ sub WriteFastq {
 sub GetFqLength {
 	my $fq = shift(@_);
 	
-	if( length($fq->[1]) == length($fq->[2]) ){
+	if(defined($fq->[1]) && defined($fq->[2]) && length($fq->[1]) == length($fq->[2]) ){
 		return length($fq->[1]);
 	}
 	#else

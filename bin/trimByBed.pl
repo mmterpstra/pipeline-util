@@ -25,7 +25,7 @@ sub main {
 		$opts -> {'t'} = $opts -> {'o'};
 		$opts -> {'t'} =~ s!^(.*\/.*)(\.fastq\.gz|\.fq\.gz|\.fqgz)!$1!g;
 		
-		warn $opts -> {'t'};
+		#warn $opts -> {'t'};
 	}
 	#warn $opts -> {'bin'};
 	
@@ -50,7 +50,7 @@ sub wrapper {
 	"paste - ".$opts -> {'t'}.".samfifo |".
 	"perl ".$opts -> {'bin'}."tickertape.pl |".
 	"gzip -c > " . $opts -> {'o'} ."&".
-	"grep -vP '^\@'  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
+	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
 	warn "[INFO] system call:". $cmd."\n";
 	my $ret;
