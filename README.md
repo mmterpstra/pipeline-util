@@ -2,6 +2,8 @@
 
 Misc tools for pipelines written in molgenis-compute-5.
 
+These are too a degree expermental tools, before using them on your own data for analysis please check/validate the output. In the design the preference was made for 'more flexable' > 'less safe'.
+
 ---
 
 # Perl dependencies
@@ -50,7 +52,7 @@ made especially for 3 prime mrna-seq and derived protocols
 
 - Trims sequences based on mapping location and specified bed files. Neatly trims off 'landing probes' used in the 
 Nugene protocol. Wrapper script using 'tickerRefine.pl' and 'tickertape.pl' they need to be in the same folder for it to work, also 'bwa mem' , samtools and bedtools should be available in path
-- Now has an experimental option to specify samfile instead of letting 'bwa mem' doing the dirty work, not everything ending with '.sam' should work though.
+- Now has an experimental option to specify samfile instead of letting 'bwa mem' doing the dirty work, not everything ending with '.sam' should work though, also see version/commit messages on tested aligners.
 
 ## AddAlleleFrequenciesToSeg.pl
 
