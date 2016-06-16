@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 use Data::Dumper;
-
+use Carp;
 main();
 
 sub main{
@@ -19,7 +19,7 @@ sub main{
 	
 	warn "Commandline: $0 ".join(' ',@ARGV)."\n";
 	
-	my $recordLast;
+	my $recordsLast;
 	my $buffer;
 	my $itstimetodie=5;
 	
@@ -27,34 +27,36 @@ sub main{
 		my $record;
 		$record = DumbReader($_);
 
-		if(defined($recordLast) && EqualReadRecords($recordLast,$record)){
+		if(defined($recordsLast) && EqualReadRecords($recordsLast,$record)){
 
 			#buffer some
-			push(@{$buffer}, $recordLast);
+			push(@{$buffer}, @{$recordsLast});
 
-		}elsif(defined($buffer) && not(EqualReadRecords($recordLast,$record))){
+		}elsif(defined($buffer) && not(EqualReadRecords($recordsLast,$record))){
 
-			push(@{$buffer}, $recordLast);
+			push(@{$buffer}, @{$recordsLast});
 			
 			#warn Dumper($buffer)."#";
 			
-			$recordLast = RefineOverlapsBuffer($buffer);
+			#die Dumper($buffer).$. ;#if(scalar(@{$buffer}) > 2);
+			$recordsLast = RefineOverlapsBuffer($buffer);
 			
 			#die Dumper($buffer,$record,$recordLast)if($itstimetodie<0);
 			#$itstimetodie--;
 			
-			print Writer($recordLast);
+			print Writer($recordsLast);
+			$recordsLast=undef;
 			
 			$buffer=undef;
 						
 		
 		#also read not(EqualReadRecords($recordLast,$record)) below, but not inserted because efficiency
-		}elsif(not(defined($buffer)) && defined($recordLast)){
+		}elsif(not(defined($buffer)) && defined($recordsLast)){
 
 			#push(@{$buffer}, $recordLast);
-			print Writer($recordLast);
-			
-		}elsif(not(defined($buffer)) && not(defined($recordLast))){
+			print Writer($recordsLast);
+			$recordsLast=undef;
+		}elsif(not(defined($buffer)) && not(defined($recordsLast))){
 			#just exit and assign $recordLast = $record;
 		}else{
 
@@ -62,24 +64,41 @@ sub main{
 
 		}
 		
-		$recordLast = $record;
+		$recordsLast -> [0] = $record;
 	}
 	#purge buffer
-	print Writer($recordLast);
+	push(@{$buffer}, @{$recordsLast});
+	$recordsLast = RefineOverlapsBuffer($buffer);
+	print Writer($recordsLast);
 }
 
 sub EqualReadRecords{
 	my $r=shift(@_);
 	my $r2=shift(@_);
-	if((GetChrRead($r) eq GetChrRead($r2)) 
-		&& (GetStartRead($r) == GetStartRead($r2)) 
-		&& (GetEndRead($r) == GetEndRead($r2)) 
-		&& (GetNameRead($r) eq GetNameRead($r2)) 
-		&& (GetStrandRead($r) eq GetStrandRead($r2))){
+	#pe is modified#
+	if(scalar(@{$r->[0]})){
+		#warn "scalar ref reassign of because of nesting ".Dumper($r,$r2);
+		$r = $r -> [0];
+		#warn "after:". Dumper($r,$r2);
+		#die;
+	};
+	if((GetNameReadNoEnd($r) eq GetNameReadNoEnd($r2))){
 		return 1;
 	}
 	return 0;
 }
+#sub EqualReadRecords{
+#	my $r=shift(@_);
+#	my $r2=shift(@_);#
+#	if((GetChrRead($r) eq GetChrRead($r2)) 
+#		&& (GetStartRead($r) == GetStartRead($r2)) 
+#		&& (GetEndRead($r) == GetEndRead($r2)) 
+#		&& (GetNameRead($r) eq GetNameRead($r2)) 
+#		&& (GetStrandRead($r) eq GetStrandRead($r2))){
+#		return 1;
+#	}
+#	return 0;
+#}
 sub GetChrRead{
 	my $r=shift(@_);
 	return($r -> [0]);
@@ -94,8 +113,17 @@ sub GetEndRead{
 }
 sub GetNameRead{
 	my $r=shift(@_);
+	#warn $r;
+	#confess "dem stacktrace".$r if($r eq 12);
 	return($r -> [3]);	
 }
+sub GetNameReadNoEnd{
+	my $r=shift(@_);
+	my $name;
+	($name,undef)= split('/',GetNameRead($r));
+	return($name);	
+}
+
 sub GetStrandRead{
 	my $r=shift(@_);
 	return($r -> [5]);	
@@ -131,7 +159,10 @@ sub DumbReader{
 }
 sub Writer{
 	$_= shift(@_);
-	join("\t",@{$_})."\n";
+	#warn Dumper($_);
+	for my $r (@{$_}){
+		print join("\t",@{$r})."\n";
+	}
 }
 
 sub GetHeader{
@@ -152,24 +183,130 @@ sub GetH2{
 
 sub RefineOverlapsBuffer {
 	my $b = shift(@_);
+	#warn $b->[0];
+	if(HasPairedEndTag($b -> [0])){
+		#run for /2 then /1
+		my $r1first;
+		my $r2first;
+		if($r2first=ShiftBufferReadEnd2($b)){
+			if(scalar(@{$b}) > 0){
+				while(my $r2second = ShiftBufferReadEnd2($b)){
+					$r2first=GetBestOverlap($r2first,$r2second);
+				}
+			}	
+		}
+		#warn "$.:r2 value: ".Dumper($r2first);
+		#also limit by $r2first probename if found
+		#refactor to GetmatchingProbeR1 or something
+		if($r1first=ShiftBufferReadEnd1($b)){
+			my $OldR1First = $r1first;
+			if(GetNameProbe($r2first) ne '.' && GetNameProbe($r2first) ne GetNameProbe($r1first)){
+				while(defined($r1first) && (GetNameProbe($r2first) ne GetNameProbe($r1first) || '.' ne GetNameProbe($r1first))){
+					$r1first = ShiftBufferReadEnd1($b);	
+				}
+			}
+			$r1first = $OldR1First if(not(defined($r1first)));#fall back on first declaration;
+			confess "$r1first is undef$." if(not(defined($r1first)));
+			if(scalar(@{$b}) > 0){
+				while(my $r1second = ShiftBufferReadEnd1($b)){
+					next if(GetNameProbe($r2first) ne '.' && (GetNameProbe($r1first) ne GetNameProbe($r2first) && '.' ne GetNameProbe($r1first)));
+					$r1first=GetBestOverlap($r1first,$r1second);
+				}
+			}
+			confess "$r1first is undef now.$." if(not(defined($r1first)));
+		}
+		
+		#confess Dumper($b).Dumper($r2first).Dumper($r1first).$. if(GetR1Overlap($r1first) > 0||GetR2Overlap($r2first) > 0);
+		#push(@{$b},$r1first);
+		#push(@{$b},$r2first);
+		my $bNew;
+		@{$bNew} = ($r1first,$r2first);
+		
+		return($bNew);
+		
+	}else{
+		my $rfirst= shift(@{$b});
+		if(scalar(@{$b}) > 0){
+			while(my $rsecond = shift(@{$b})){
+				$rfirst=GetBestOverlap($rfirst,$rsecond);
+			}
+		}
+		push(@{$b},@{$rfirst});
+		return @{$rfirst};
+	}
+
 	
-	my $r1= shift(@{$b});
-	if(scalar(@{$b}) > 0){
-		while(my $r2= shift(@{$b})){
-			$r1=GetBestOverlap($r1,$r2);
+}
+sub ShiftBufferReadEnd {
+	my $b = shift(@_);
+	#
+	my $readEnd = shift(@_);#1 or 2
+	#die "Funky data yes\n".Dumper($b) if($readEnd != 1 || $readEnd != 2 );
+	#
+	#warn "buffer contains:".Dumper $b;
+	for(my $bIndex = 0; $bIndex < scalar(@{$b}); $bIndex++){
+	#	#die "Funky data yes\n".Dumper($b) if(GetReadEnd($b -> [$bIndex]) != 1 || GetReadEnd($b -> [$bIndex]) != 2 );
+	#	#return(splice(@{$b},$bIndex,1))if(GetReadEnd($b -> [$bIndex]) eq $readEnd);
+		#my @tmpBuffer = shift(@{$b});
+		if(GetReadEnd($b -> [$bIndex]) eq $readEnd){
+	#		warn "buffer return contains: \n".Dumper($b).Dumper($b -> [$bIndex],$.);
+			#too experimental... goes with return			
+			return(splice(@{$b},$bIndex,1));
 		}
 	}
-	push(@{$b},$r1);
-	return $r1;
+	
+	return(undef);
+	
+}
+sub ShiftBufferReadEnd1 {
+	return(ShiftBufferReadEnd($_[0],1));
+}
+sub ShiftBufferReadEnd2 {
+	return(ShiftBufferReadEnd($_[0],2));
+}
+sub IsPairedEnd {
+	return(HasPairedEndTag(@_));
+}
+sub HasPairedEndTag {
+	my $r= shift(@_);
+	#test
+	if(scalar(split('/',GetNameRead($r))) > 1){;
+		return(1);
+	}else{
+		return(0);
+		
+	}
+}
+sub GetReadEnd {
+	my $r= shift(@_);
+	my $readend;
+	(undef,$readend) = split('/',GetNameRead($r));
+	return($readend);
 }
 sub GetBestOverlap{
 	my $r1= shift(@_);
 	my $r2= shift(@_);
 	
 	#has two record or more:
-	if(Get3PrimeOverlap($r1)<Get3PrimeOverlap($r2)){
-		$r1=$r2;
+	#GetReadEnd($b -> [$bIndex]) eq $readEnd)
+	if(not(HasPairedEndTag($r1))){
+		if(GetR1Overlap($r1)<GetR1Overlap($r2)){
+			$r1=$r2;
+		}
+	}else{
+		if(GetReadEnd($r1) eq 1){
+			#confess "logic not implemented";
+			if(GetR1Overlap($r1)<GetR1Overlap($r2)){
+				$r1=$r2;
+			}
+		}elsif(GetReadEnd($r1) eq 2){
+			#confess "logic not implemented";
+			if(GetR2Overlap($r1)<GetR2Overlap($r2)){
+				$r1=$r2;
+			}
+		}
 	}
+	
 	#die Dumper($r1,$r2)."#";
 	return $r1;
 }
@@ -225,10 +362,17 @@ sub GetBestOverlap{
 #GetStartProbe($r) +1 <= GetEndRead($r);
 #$overlap=GetEndRead($r)-GetStartProbe($r) + 1;
 
-sub Get3PrimeOverlap{
+sub GetR1Overlap{
 	my $r= shift(@_);
+	my $R2probe;
+	$R2probe = shift @_ if(scalar(@_));
 	my $overlap=0;
-	my $wiggle = 0;
+	my $wiggle = 6;
+	
+	if($R2probe && $R2probe eq GetNameProbe($r)){
+		return 0;
+	}
+	
 	
 	if(	GetStrandRead($r) ne GetStrandProbe($r) 
 		&& GetStrandRead($r) ne '.'
@@ -254,13 +398,63 @@ sub Get3PrimeOverlap{
 			#die Dumper(\$overlap,\$overlap,$r);
 		}
 	}else{
+		#there should not be overlap here
 		#warn Dumper($r, \$overlap);
-		#die Dumper($r, \$overlap)."#" if($overlap < 0);
+		die Dumper($r, \$overlap)."#" if($overlap > 41);
 	}
-	#warn Dumper($r, \$overlap)."#";
-	#die Dumper($r, \$overlap)if($overlap > 0);
+	#warn "Is this an error? ".Dumper($r, \$overlap)."#";
+	die "plz check for errors:".Dumper($r, \$overlap)if($overlap > 46);
 	
 	return $overlap;
 }
 
-
+#
+#has R2?
+#find probeoverlap as in:
+#	
+sub GetR2Overlap{
+	my $r= shift(@_);
+	my $overlap=0;
+	my $wiggleR2 = 2;
+	
+	
+	#strands should be eq
+	
+	if(	GetStrandRead($r) eq GetStrandProbe($r) 
+		&& GetStrandRead($r) ne '.'
+		&& GetStrandProbe($r) ne '.'){
+		
+		if(GetStrandRead($r) eq '+'
+			&& GetEndProbe($r) >= GetStartRead($r)
+			&& GetStartRead($r) < GetStartProbe($r) + ($wiggleR2/2) 
+			&& GetStartRead($r) > GetStartProbe($r) - ($wiggleR2/2)){
+				
+			#--->--read-->
+			#--- >probe>
+			
+			$overlap = GetEndProbe($r) - GetStartRead($r);
+			#die Dumper(\$overlap,\$overlap,$r)."#";
+		}elsif(GetStrandRead($r) eq '-'
+			&& GetEndRead($r) >= GetStartProbe($r) + 1 
+			&& GetEndRead($r) < GetEndProbe($r) + $wiggleR2 
+			&& GetEndRead($r) > GetEndProbe($r) - $wiggleR2){
+				
+			#---<read<---
+			#--<probe<---
+			
+			$overlap = GetEndRead($r) - GetStartProbe($r);
+			die Dumper(\$overlap,\$overlap,$r) if($overlap > 41);
+		}
+	}else{
+		#warn Dumper($r, \$overlap);
+		die Dumper($r, \$overlap)."#" if($overlap > 41);
+	}
+	#warn Dumper($r, \$overlap)."#";
+	#die Dumper($r, \$overlap)if($overlap > 41);
+	
+	return $overlap;
+}
+#put GetR2Overlap into script
+#find a way to trim/select most concardant R1 read whit best R2 read or just Trim R2
+#if no R2 return R1
+#create nice fastq/sam intermediates

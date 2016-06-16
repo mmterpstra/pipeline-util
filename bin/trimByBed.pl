@@ -11,8 +11,8 @@ sub main {
 	warn "[INFO] cmdline:".join(' ',($0,@ARGV))."\n";
 	getopts('r:b:i:o:s:', \%{$opts});
 	#warn Dumper($opts);
-	if(not( defined($opts -> {'b'}) && -e $opts -> {'b'} && defined($opts -> {'o'}) && defined($opts -> {'i'}) && -e $opts -> {'i'} &&
-	 ((defined($opts -> {'r'}) ) ||  (defined($opts-> {'s'}) && -e $opts -> {'s'} )) )){
+	if(not( defined($opts -> {'b'}) && -e $opts -> {'b'} && defined($opts -> {'o'}) && 
+	 ((defined($opts -> {'r'}) && defined($opts -> {'i'}) && -e $opts -> {'i'} ) ||  (defined($opts-> {'s'}) && -e $opts -> {'s'} )) )){
 		die "[FATAL] invalid arguments \n".  usemsg();
 	}
 	
@@ -33,9 +33,10 @@ sub main {
 }
 sub wrapper {
 	my $opts = shift @_;
-	
-	my $createSamFile = "bwa mem ".$opts -> {'r'}." ".$opts -> {'i'}." > " . $opts -> {'t'} . ".tmp.sam";
-	
+	my $createSamFile;
+	if(defined($opts -> {'r'}) && defined($opts -> {'i'})){
+		$createSamFile = "bwa mem ".$opts -> {'r'}." ".$opts -> {'i'}." > " . $opts -> {'t'} . ".tmp.sam";
+	}
 	if($opts -> {'s'} && -e $opts -> {'s'}){
 		$createSamFile = "cp -v " . $opts -> {'s'} . " " . $opts -> {'t'} . ".tmp.sam";		
 	}elsif($opts -> {'s'} && ! -e $opts -> {'s'}){
@@ -45,16 +46,16 @@ sub wrapper {
 	#good luck at debug
 	my $cmd="set -x;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
-	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}." -S | ".
+	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
 	"paste - ".$opts -> {'t'}.".samfifo |".
-	"perl ".$opts -> {'bin'}."tickertape.pl |".
+	"perl ".$opts -> {'bin'}."tickertape.pl -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz|".
 	"gzip -c > " . $opts -> {'o'} ."&".
 	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
 	warn "[INFO] system call:". $cmd."\n";
 	my $ret;
-	@{$ret} =`($cmd )2>&1`;
+	@{$ret} = `($cmd )2>&1`;
 	
 	warn "[INFO] system call results:\n";
 	for (@{$ret}){
