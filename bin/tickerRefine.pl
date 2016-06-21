@@ -139,15 +139,31 @@ sub GetStartProbe{
 }
 sub GetEndProbe{
 	my $r=shift(@_);
-	return($r -> [14]);
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		return($r -> [15]);# or die 'Record does not contain this many fields!';
+	}else{
+		#warn $record -> [20];
+		return($r -> [14]);# or die 'Record does not contain this many fields!';
+	}
 }
 sub GetNameProbe{
 	my $r=shift(@_);
-	return($r -> [15]);	
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		#warn $r -> [16];
+		
+		return($r -> [16]);# or die 'Record does not contain this many fields!';
+	}else{
+		return($r -> [15]);# or die 'Record does not contain this many fields!';
+	}
 }
 sub GetStrandProbe{
 	my $r=shift(@_);
-	return($r -> [17]);	
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		return($r -> [18]);# or die 'Record does not contain this many fields!';
+	}else{
+		#warn $record -> [20];
+		return($r -> [17]);# or die 'Record does not contain this many fields!';
+	}
 }
 
 sub DumbReader{
@@ -173,11 +189,11 @@ sub GetHeader{
 sub GetH2{
 	my $record = shift(@_);
 	#warn $record -> [19];
-	if($record -> [0] ne "."){
-		return($record -> [19]);# or die 'Record does not contain this many fields!';
+	if($record -> [0] eq "." || $record -> [1] == -1){
+		return($record -> [20]);# or die 'Record does not contain this many fields!';
 	}else{
 		#warn $record -> [20];
-		return($record -> [20]);# or die 'Record does not contain this many fields!';
+		return($record -> [19]);# or die 'Record does not contain this many fields!';
 	}
 }
 
@@ -195,25 +211,31 @@ sub RefineOverlapsBuffer {
 				}
 			}	
 		}
-		#warn "$.:r2 value: ".Dumper($r2first);
+		
 		#also limit by $r2first probename if found
 		#refactor to GetmatchingProbeR1 or something
-		if($r1first=ShiftBufferReadEnd1($b)){
-			my $OldR1First = $r1first;
+		my $r1firstNext;
+		if($r1firstNext=ShiftBufferReadEnd1($b)){
+			#
+			
+			$r1first=$r1firstNext;
 			if(GetNameProbe($r2first) ne '.' && GetNameProbe($r2first) ne GetNameProbe($r1first)){
-				while(defined($r1first) && (GetNameProbe($r2first) ne GetNameProbe($r1first) || '.' ne GetNameProbe($r1first))){
-					$r1first = ShiftBufferReadEnd1($b);	
+				while(defined($r1firstNext) && not((GetNameProbe($r2first) eq GetNameProbe($r1first) || '\.' eq GetNameProbe($r1first)))){
+					$r1first=$r1firstNext if($r1firstNext = ShiftBufferReadEnd1($b));					
 				}
 			}
-			$r1first = $OldR1First if(not(defined($r1first)));#fall back on first declaration;
-			confess "$r1first is undef$." if(not(defined($r1first)));
+			
+			
+			
+			confess Dumper($r1first,$b,$r2first)." is undef l$." if(not(defined($r1first)));
+			
 			if(scalar(@{$b}) > 0){
 				while(my $r1second = ShiftBufferReadEnd1($b)){
 					next if(GetNameProbe($r2first) ne '.' && (GetNameProbe($r1first) ne GetNameProbe($r2first) && '.' ne GetNameProbe($r1first)));
 					$r1first=GetBestOverlap($r1first,$r1second);
 				}
 			}
-			confess "$r1first is undef now.$." if(not(defined($r1first)));
+			confess "$r1first is undef now.$. $!" if(not(defined($r1first)));
 		}
 		
 		#confess Dumper($b).Dumper($r2first).Dumper($r1first).$. if(GetR1Overlap($r1first) > 0||GetR2Overlap($r2first) > 0);
@@ -270,7 +292,8 @@ sub IsPairedEnd {
 sub HasPairedEndTag {
 	my $r= shift(@_);
 	#test
-	if(scalar(split('/',GetNameRead($r))) > 1){;
+	my @split = split('/',GetNameRead($r));
+	if(scalar(@split) > 1){;
 		return(1);
 	}else{
 		return(0);
@@ -286,6 +309,7 @@ sub GetReadEnd {
 sub GetBestOverlap{
 	my $r1= shift(@_);
 	my $r2= shift(@_);
+	my $wiggle = 6;
 	
 	#has two record or more:
 	#GetReadEnd($b -> [$bIndex]) eq $readEnd)
@@ -296,12 +320,22 @@ sub GetBestOverlap{
 	}else{
 		if(GetReadEnd($r1) eq 1){
 			#confess "logic not implemented";
-			if(GetR1Overlap($r1)<GetR1Overlap($r2)){
+			#best part is < abs(overlap - 40 - wiggle/pseudo homology )
+			my $overlapR2=GetR1Overlap($r2);
+			my $overlapR1=GetR1Overlap($r1);
+			#warn "Check this out M01785:319:000000000-APBEA:1:2106:17925:3408 $.:".abs($overlapR1 - 40 - $wiggle ) ."R1/2R". abs($overlapR2 - 40 - $wiggle ).Dumper(\$overlapR1,\$overlapR2,$r1,$r2)if(GetNameRead($r1) =~  m/M01785:319:000000000\-APBEA:1:2106:24472:4693/);
+			if(abs($overlapR1 - 40 - $wiggle ) > abs($overlapR2 - 40 - $wiggle )){#wants 40 or less
 				$r1=$r2;
 			}
 		}elsif(GetReadEnd($r1) eq 2){
 			#confess "logic not implemented";
-			if(GetR2Overlap($r1)<GetR2Overlap($r2)){
+			
+			my $overlapR2=GetR2Overlap($r2);
+			my $overlapR1=GetR2Overlap($r1);
+			#keep smallest of pair =5 46
+			if(abs($overlapR1 - 40 - $wiggle ) > abs($overlapR2 - 40 - $wiggle )){#wants 40
+				#warn "#####################################Check this out M01785:319:000000000-APBEA:1:2106:17925:3408 $.:".Dumper(\$overlapR2,\$overlapR1,$r1,$r2)if(GetNameRead($r1) =~  m/M01785:319:000000000\-APBEA:1:2106:24472:4693/);
+				
 				$r1=$r2;
 			}
 		}
@@ -363,7 +397,7 @@ sub GetBestOverlap{
 #$overlap=GetEndRead($r)-GetStartProbe($r) + 1;
 
 sub GetR1Overlap{
-	my $r= shift(@_);
+	my $r = shift(@_);
 	my $R2probe;
 	$R2probe = shift @_ if(scalar(@_));
 	my $overlap=0;
@@ -400,10 +434,10 @@ sub GetR1Overlap{
 	}else{
 		#there should not be overlap here
 		#warn Dumper($r, \$overlap);
-		die Dumper($r, \$overlap)."#" if($overlap > 41);
+		#die Dumper($r, \$overlap)."#" if($overlap > 41);
 	}
 	#warn "Is this an error? ".Dumper($r, \$overlap)."#";
-	die "plz check for errors:".Dumper($r, \$overlap)if($overlap > 46);
+	#die "plz check for errors:".Dumper($r, \$overlap)if($overlap > 46);
 	
 	return $overlap;
 }
@@ -415,7 +449,7 @@ sub GetR1Overlap{
 sub GetR2Overlap{
 	my $r= shift(@_);
 	my $overlap=0;
-	my $wiggleR2 = 2;
+	my $wiggleR2 = 6;
 	
 	
 	#strands should be eq
@@ -424,30 +458,28 @@ sub GetR2Overlap{
 		&& GetStrandRead($r) ne '.'
 		&& GetStrandProbe($r) ne '.'){
 		
-		if(GetStrandRead($r) eq '+'
-			&& GetEndProbe($r) >= GetStartRead($r)
-			&& GetStartRead($r) < GetStartProbe($r) + ($wiggleR2/2) 
-			&& GetStartRead($r) > GetStartProbe($r) - ($wiggleR2/2)){
+		if(GetStrandRead($r) eq '+' &&
+			GetStartRead($r) - $wiggleR2  <= GetStartProbe($r) && 
+			GetEndRead($r) >= GetStartProbe($r) ){
 				
 			#--->--read-->
 			#--- >probe>
 			
 			$overlap = GetEndProbe($r) - GetStartRead($r);
 			#die Dumper(\$overlap,\$overlap,$r)."#";
-		}elsif(GetStrandRead($r) eq '-'
-			&& GetEndRead($r) >= GetStartProbe($r) + 1 
-			&& GetEndRead($r) < GetEndProbe($r) + $wiggleR2 
-			&& GetEndRead($r) > GetEndProbe($r) - $wiggleR2){
+		}elsif(GetStrandRead($r) eq '-' &&
+			GetStartRead($r) <= GetEndProbe($r) && 
+			GetEndRead($r) + $wiggleR2  >= GetEndProbe($r)){
 				
 			#---<read<---
 			#--<probe<---
 			
 			$overlap = GetEndRead($r) - GetStartProbe($r);
-			die Dumper(\$overlap,\$overlap,$r) if($overlap > 41);
+			#die Dumper(\$overlap,\$overlap,$r) if($overlap > 41);
 		}
 	}else{
 		#warn Dumper($r, \$overlap);
-		die Dumper($r, \$overlap)."#" if($overlap > 41);
+		#die Dumper($r, \$overlap)."#" if($overlap > 41);
 	}
 	#warn Dumper($r, \$overlap)."#";
 	#die Dumper($r, \$overlap)if($overlap > 41);

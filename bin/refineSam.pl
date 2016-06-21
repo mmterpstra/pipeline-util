@@ -260,7 +260,7 @@ sub IsReverseAlignment {
 		
 		return 1;
 	}else{
-		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);	
+		#"die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);	
 		return 0;
 	}
 }
@@ -325,7 +325,7 @@ sub GetBestOverlap{
 	my $r1= shift(@_);
 	my $r2= shift(@_);
 	
-	#has two record or more:
+	#has two records or more:
 	if(GetFlagRead($r1)>GetFlagRead($r2)){
 		$r1=$r2;
 	}

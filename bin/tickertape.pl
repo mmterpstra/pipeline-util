@@ -64,6 +64,8 @@ sub main{
 			$_ = <>;
 			my $r2 = DumbReader($_) or confess "Cannot read paired data although pe flags set";
 			if(my $fqs = TrimReadsByProbe($r1,$r2)){
+				#get a nice result dump
+				#warn Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/M01785:319:000000000-APBEA:1:2106:13874:2778/);
 				if(GetFqLength($fqs -> [0]) >=  20 && GetFqLength($fqs -> [1]) >= 20){
 					if($opts -> {'R2'} && $opts -> {'R1'}){
 						print {$fqouthandles -> [1]} WriteFastq($fqs -> [0]);
@@ -134,7 +136,12 @@ sub GetEndProbe{
 }
 sub GetNameProbe{
 	my $r=shift(@_);
-	return($r -> [15]);# or die 'Record does not contain this many fields!'.Dumper($r);	
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		return($r -> [16]);# or die 'Record does not contain this many fields!';
+	}else{
+		#warn $record -> [20];
+		return($r -> [15]);# or die 'Record does not contain this many fields!';
+	}
 }
 sub GetStrandProbe{
 	my $r=shift(@_);
@@ -143,11 +150,11 @@ sub GetStrandProbe{
 sub GetQualRead{
 	my $r=shift(@_);
 	my $ret;
-	if($r -> [0] ne "."&& $r -> [1] != -1){
-		$ret = $r -> [29];# or die 'Record does not contain this many fields!';
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		$ret = $r -> [30];# or die 'Record does not contain this many fields!';
 	}else{
 		#warn $record -> [20];
-		$ret = $r -> [30];# or die 'Record does not contain this many fields!';
+		$ret = $r -> [29];# or die 'Record does not contain this many fields!';
 	}
 	return($ret);	
 }
@@ -155,11 +162,11 @@ sub GetSeqRead{
 	my $r=shift(@_);
 	
 	my $ret;
-	if($r -> [0] ne "." && $r -> [1] != -1){
-		$ret = $r -> [28];# or die 'Record does not contain this many fields!';
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		$ret = $r -> [29];# or die 'Record does not contain this many fields!';
 	}else{
 
-		$ret = $r -> [29];# or die 'Record does not contain this many fields!';
+		$ret = $r -> [28];# or die 'Record does not contain this many fields!';
 	}
 	#
 	die $ret.Dumper($r)."$." if(!(defined($ret) && ($ret =~ /^[ATCGNatcgn]*$/)));
@@ -171,11 +178,11 @@ sub GetFlagRead{
 	my $r=shift(@_);
 	# $r -> [20]."\n".Dumper($r)."\nqual=".GetQualRead($r)."\nseq=".GetSeqRead($r) if(! looks_like_number($r -> [20]));
 	my $ret;
-	if($r -> [0] ne "." && $r -> [1] != -1){
-		$ret = $r -> [20];# or die 'Record does not contain this many fields!';
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		$ret = $r -> [21];# or die 'Record does not contain this many fields!';
 	}else{
 
-		$ret = $r -> [21];# or die 'Record does not contain this many fields!';
+		$ret = $r -> [20];# or die 'Record does not contain this many fields!';
 	}
 	#
 	defined($ret) or die "Invalid record at line ". $. .": ".Dumper($r);
@@ -185,11 +192,11 @@ sub GetFlagRead{
 sub GetCigarRead{
 	my $r=shift(@_);
 	my $ret;
-	if($r -> [0] ne "." && $r -> [1] != -1){
-		$ret = $r -> [24];# or die 'Record does not contain this many fields!';
+	if($r -> [0] eq "." || $r -> [1] == -1){
+		$ret = $r -> [25];# or die 'Record does not contain this many fields!';
 	}else{
 
-		$ret = $r -> [25];# or die 'Record does not contain this many fields!';
+		$ret = $r -> [24];# or die 'Record does not contain this many fields!';
 	}
 	#
 	return($ret);
@@ -237,11 +244,11 @@ sub GetHeaderRead{
 sub GetH2{
 	my $record = shift(@_);
 	#warn $record -> [19];
-	if($record -> [0] ne "."){
-		return($record -> [19]);# or die 'Record does not contain this many fields!';
+	if($record -> [0] eq "." || $record -> [1] == -1){
+		return($record -> [20]);# or die 'Record does not contain this many fields!';
 	}else{
 		#warn $record -> [20];
-		return($record -> [20]);# or die 'Record does not contain this many fields!';
+		return($record -> [19]);# or die 'Record does not contain this many fields!';
 	}
 }
 
@@ -376,6 +383,7 @@ sub HasPairedEndTag {
 sub TrimReadByProbe{
 	my $r= shift(@_);
 	my $fq;
+	my $wiggle;
 	my $overlap = Get3PrimeOverlap($r);
 	if(IsPrimaryAlignment($r)> 0){
 		$fq->[0] = GetHeaderRead($r);
@@ -388,7 +396,7 @@ sub TrimReadByProbe{
 		
 		if($overlap){
 			my $trimOffset = CalcTrim($overlap,$r);
-			TrimFq($trimOffset,$fq);
+			TrimFq($trimOffset,$fq) if($trimOffset < (40 + $wiggle))
 			#die Dumper(\$overlap,$r,$fq);
 		}
 		return $fq;
@@ -406,7 +414,7 @@ sub TrimReadsByProbe{
 	my $overlapR2 = GetR2Overlap($r2);
 	
 	my $overlapR1;
-	if($overlapR2 > 38 && $overlapR2 < 42){
+	if($overlapR2 > 38 ){
 		$overlapR1 = GetR1Overlap($r1,GetNameProbe($r2));
 		
 		#warn $overlapR1.Dumper($r1).GetNameProbe($r2);
@@ -425,9 +433,12 @@ sub TrimReadsByProbe{
 			$fqs->[1]=ReverseComplementFq($fqs->[1]);
 		}
 		
+		#warn Dumper($overlapR2,$r2).$.;
+		
 		if($overlapR2){
-			my $trimOffsetR2 = CalcTrim($overlapR2,$r2);
 			
+			my $trimOffsetR2 = CalcTrim($overlapR2,$r2);
+			#warn Dumper(\$overlapR2,\$trimOffsetR2,$r2);
 			$fqs->[1]=ReverseComplementFq($fqs->[1]);
 			TrimFq($trimOffsetR2,$fqs -> [1]);
 			$fqs->[1]=ReverseComplementFq($fqs->[1]);
@@ -518,6 +529,8 @@ sub CalcTrim{
 		}
 	}
 	
+	
+	warn "Something strange is happening here".Dumper(\$overlap,\$trimbasesright,$r,$cigar) if(HasPairedEndTag($r) && GetReadPairEnd($r) == 2 && $overlap > length(GetSeqRead($r)));
 	#die Dumper(\$overlap,\$trimbasesright,$r,$cigar)if(GetCigarRead($r) =~ /S|I/ && $. > 38);
 	return $trimbasesright;
 }
@@ -607,6 +620,7 @@ sub GetR1Overlap{
 		&& GetStrandProbe($r) ne '.'){
 		
 		if(GetStrandRead($r) eq '+'
+			&& GetStrandProbe($r) eq '-'
 			&& GetEndProbe($r) + $wiggle >= GetEndRead($r)
 			&& GetStartProbe($r) +1 <= GetEndRead($r)){
 				
@@ -616,6 +630,7 @@ sub GetR1Overlap{
 			$overlap = GetEndRead($r) - GetStartProbe($r);
 			#die Dumper(\$overlap,\$overlap,$r)."#";
 		}elsif(GetStrandRead($r) eq '-'
+			&& GetStrandProbe($r) eq '+'
 			&& GetEndProbe($r) >= GetStartRead($r) + 1 
 			&& GetStartProbe($r) - $wiggle <= GetStartRead($r)){
 				
@@ -628,10 +643,10 @@ sub GetR1Overlap{
 	}else{
 		#there should not be overlap here
 		#warn Dumper($r, \$overlap);
-		die Dumper($r, \$overlap)."#" if($overlap > 41);
+		#die Dumper($r, \$overlap)."#" if($overlap > 41);
 	}
-	#cluck "Is this an error? ".Dumper($r, \$overlap)."#";
-	die "plz check for errors:".Dumper($r, \$overlap)if($overlap > 46);
+	#warn "Is this an error? ".Dumper($r, \$overlap)."#" if(GetNameProbe($r) =~ m/M01785:319:000000000-APBEA:1:2106:24472:4693/);
+	#die "plz check for errors:".Dumper($r, \$overlap)if($overlap > 46);
 	
 	return $overlap;
 }
@@ -643,7 +658,7 @@ sub GetR1Overlap{
 sub GetR2Overlap{
 	my $r= shift(@_);
 	my $overlap=0;
-	my $wiggleR2 = 2;
+	my $wiggleR2 = 6;
 	
 	
 	#strands should be eq
@@ -652,33 +667,34 @@ sub GetR2Overlap{
 		&& GetStrandRead($r) ne '.'
 		&& GetStrandProbe($r) ne '.'){
 		
-		if(GetStrandRead($r) eq '+'
-			&& GetEndProbe($r) >= GetStartRead($r)
-			&& GetStartRead($r) < GetStartProbe($r) + ($wiggleR2/2) 
-			&& GetStartRead($r) > GetStartProbe($r) - ($wiggleR2/2)){
-				
+		#somethimes this is too complex to find a good solution as is. Because the cigar also effects the start and end points. And 
+		if(GetStrandRead($r) eq '+' &&
+			GetStartRead($r) - $wiggleR2  <= GetStartProbe($r) && 
+			GetEndRead($r) >= GetStartProbe($r) ){
+			
+			
+			
 			#--->--read-->
 			#--- >probe>
 			
 			$overlap = GetEndProbe($r) - GetStartRead($r);
-			#die Dumper(\$overlap,\$overlap,$r)."#";
-		}elsif(GetStrandRead($r) eq '-'
-			&& GetEndRead($r) >= GetStartProbe($r) + 1 
-			&& GetEndRead($r) < GetEndProbe($r) + $wiggleR2 
-			&& GetEndRead($r) > GetEndProbe($r) - $wiggleR2){
+			#warn Dumper(\$overlap,\$overlap,$r)."#";
+		}elsif(GetStrandRead($r) eq '-' &&
+			GetStartRead($r) <= GetEndProbe($r) && 
+			GetEndRead($r) + $wiggleR2  >= GetEndProbe($r) ){
 				
 			#---<read<---
 			#--<probe<---
 			
 			$overlap = GetEndRead($r) - GetStartProbe($r);
-			die Dumper(\$overlap,\$overlap,$r) if($overlap > 41);
+			#die Dumper(\$overlap,\$overlap,$r) if($overlap > 41);
 		}
 	}else{
 		#warn Dumper($r, \$overlap);
-		die Dumper($r, \$overlap)."#" if($overlap > 41);
+		#die Dumper($r, \$overlap)."#" if($overlap > 41);
 	}
-	#cluck Dumper($r, \$overlap)."#";
-	die Dumper($r, \$overlap)if($overlap > 41);
+	#warn Dumper($r, \$overlap)."#";
+	#die Dumper($r, \$overlap)if($overlap > 41);
 	
 	return $overlap;
 }

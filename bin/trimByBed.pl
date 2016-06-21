@@ -43,6 +43,10 @@ sub wrapper {
 		die "invalid -s samfile option set this should be a valid/existing samfile.";
 	}
 	
+	if(-e $opts -> {'t'}.".samfifo"){
+		warn "[INFO] Removing samfifo '".$opts -> {'t'}.".samfifo'\n";
+		unlink($opts -> {'t'}.".samfifo");
+	}
 	#good luck at debug
 	my $cmd="set -x;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
