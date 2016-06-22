@@ -46,7 +46,7 @@ sub main{
 			
 			#die Dumper($buffer,$record,$recordLast)if($itstimetodie<0);
 			#$itstimetodie--;
-			
+			confess Dumper($recordsLast,$buffer) if ($recordsLast eq "21");
 			print Writer($recordsLast);
 			$recordsLast=undef;
 			
@@ -184,10 +184,14 @@ sub PickBest{
 		if(scalar(@{$b}) > 0){
 			while(my $r1next= shift(@{$b})){
 				$r1=GetBestOverlap($r1,$r1next);
+				
 			}
 		}
 		push(@{$b},$r1);
-		return @{$r1};
+		my $bNew;
+		@{$bNew} = ($r1);
+		
+		return($bNew);
 	}
 	
 }

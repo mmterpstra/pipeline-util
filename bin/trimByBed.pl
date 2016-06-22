@@ -53,8 +53,7 @@ sub wrapper {
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
 	"paste - ".$opts -> {'t'}.".samfifo |".
-	"perl ".$opts -> {'bin'}."tickertape.pl -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz|".
-	"gzip -c > " . $opts -> {'o'} ."&".
+	"perl ".$opts -> {'bin'}."tickertape.pl -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz&".
 	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
 	warn "[INFO] system call:". $cmd."\n";

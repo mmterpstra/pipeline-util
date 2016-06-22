@@ -254,7 +254,11 @@ sub RefineOverlapsBuffer {
 			}
 		}
 		push(@{$b},@{$rfirst});
-		return @{$rfirst};
+		
+		my $bNew;
+		@{$bNew} = ($rfirst);
+		
+		return($bNew);
 	}
 
 	

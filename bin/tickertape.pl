@@ -52,8 +52,9 @@ sub main{
 		open($fqouthandles -> [1],'|-',$cmd) or die "Cannot write '$cmd'";
 		$cmd = "gzip -c > ".$opts -> {'R2'};
 		open($fqouthandles -> [2],'|-',$cmd) or die "Cannot write '$cmd'";
-	}elsif($opts -> {'U'}){
-		my $cmd = "gzip -cd > $opts -> {'U'}";
+	}
+	if($opts -> {'U'}){
+		my $cmd = "gzip -c > ".$opts -> {'U'};
 		open($fqouthandles -> [0],'|-',$cmd) or die "Cannot write '$cmd'";
 	}
 	
@@ -383,7 +384,7 @@ sub HasPairedEndTag {
 sub TrimReadByProbe{
 	my $r= shift(@_);
 	my $fq;
-	my $wiggle;
+	my $wiggle = 6;
 	my $overlap = Get3PrimeOverlap($r);
 	if(IsPrimaryAlignment($r)> 0){
 		$fq->[0] = GetHeaderRead($r);
@@ -396,8 +397,8 @@ sub TrimReadByProbe{
 		
 		if($overlap){
 			my $trimOffset = CalcTrim($overlap,$r);
-			TrimFq($trimOffset,$fq) if($trimOffset < (40 + $wiggle))
-			#die Dumper(\$overlap,$r,$fq);
+			TrimFq($trimOffset,$fq) if($trimOffset < (40 + $wiggle));
+			#confess Dumper(\$overlap,$r,$fq) if($. == 6);
 		}
 		return $fq;
 	}else{
@@ -501,8 +502,8 @@ sub CalcTrim{
 	#die "[FATAL] $0::CalcTrim : DUMPER";
 	
 	while(scalar(@{$cigar}) && $overlap >= 0){
-		#sam format spec: cigar should be read according to Read/and end of trimming (e.g. R1 trim endand R2 trim start)
-		if(IsReverseAlignment($r) && GetReadPairEnd($r) == 1 || not(IsReverseAlignment($r)) && GetReadPairEnd($r) == 2){
+		#sam format spec: cigar should be read according to Read/and end of trimming (e.g. R1 trim endand R2 trim start) now also interprets SE as read1.
+		if(IsReverseAlignment($r) && not(HasPairedEndTag($r))|| (IsReverseAlignment($r) && HasPairedEndTag($r) && GetReadPairEnd($r) == 1) || (not(IsReverseAlignment($r)) && (HasPairedEndTag($r) && GetReadPairEnd($r) == 2))){
 			$ref = shift(@{$cigar});
 		}else{
 			$ref = pop(@{$cigar});
