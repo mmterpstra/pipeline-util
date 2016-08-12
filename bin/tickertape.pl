@@ -66,7 +66,7 @@ sub main{
 			my $r2 = DumbReader($_) or confess "Cannot read paired data although pe flags set";
 			if(my $fqs = TrimReadsByProbe($r1,$r2)){
 				#get a nice result dump
-				#warn Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/M01785:319:000000000-APBEA:1:2106:13874:2778/);
+				warn Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/1308/);
 				if(GetFqLength($fqs -> [0]) >=  20 && GetFqLength($fqs -> [1]) >= 20){
 					if($opts -> {'R2'} && $opts -> {'R1'}){
 						print {$fqouthandles -> [1]} WriteFastq($fqs -> [0]);
@@ -79,6 +79,7 @@ sub main{
 			}
 		}else{
 			if(my $fq = TrimReadByProbe($record)){
+				#warn Dumper($fq).$. if(GetNameRead($record) =~  m/1308/);
 				if(GetFqLength($fq) >= 20){
 					print {$fqouthandles -> [0]} WriteFastq($fq);
 				}
@@ -415,13 +416,14 @@ sub TrimReadsByProbe{
 	my $overlapR2 = GetR2Overlap($r2);
 	
 	my $overlapR1;
-	if($overlapR2 > 38 ){
+	if($overlapR2){
 		$overlapR1 = GetR1Overlap($r1,GetNameProbe($r2));
 		
 		#warn $overlapR1.Dumper($r1).GetNameProbe($r2);
-	}else{
-		$overlapR1 = GetR1Overlap($r1);
 	}
+	#else{
+	#	$overlapR1 = GetR1Overlap($r1);
+	#}
 	
 	
 	if(IsPrimaryAlignment($r1)> 0){#does this work??
@@ -597,7 +599,11 @@ sub WriteFastqs {
 sub GetFqLength {
 	my $fq = shift(@_);
 	
-	if(defined($fq->[1]) && defined($fq->[2]) && length($fq->[1]) == length($fq->[2]) ){
+	if(defined($fq->[1]) && defined($fq->[2]) &&(length($fq->[1]) == length($fq->[2]) || $fq->[2] eq '*'|| $fq->[2] eq '')){
+		if($fq->[2] eq '*'|| $fq->[2] eq ''){
+			warn "[WARN] No fastq qualtities found! Defaulting to ascii '5'";
+			$fq -> [2] = '5' x length($fq -> [1]);
+		}
 		return length($fq->[1]);
 	}
 	#else

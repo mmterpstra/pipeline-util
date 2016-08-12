@@ -68,12 +68,12 @@ sub wrapper {
 }
 sub usemsg {
 	my $use =<<"END";
-use: $0 [-s SAMALIGNMENT| -r BWAINDEXBASE] -b TRIMBED -i INFASTQGZ -o OUTFASTQGZ
+use: $0 [-s SAMALIGNMENT| -r BWAINDEXBASE -i INFASTQGZ] -b TRIMBED -o OUTPREFIX
         BWAINDEXBASE    Index generated with bwa on reference
         TRIMBED         Regions to trim in bed6 format (bed file with the CHR, START, END, ID, SCORE and STRAND fields).
         INFASTQGZ       Input gzipped Fastq file.
-        OUTFASTQGZ      Output gzipped Fastq file.
-	SAMALIGNMENT	Alignment in SAM Format. Specifying this option skips the BWA alignment step and the need for a BWA index.
+        OUTPREFIX      Output gzipped Fastq prefix. Suffix is .fq.gz or _R1.fq.gz/_R2.fq.gz for single or paired end respectively.
+	SAMALIGNMENT	Alignment in SAM Format. Specifying this option skips the BWA alignment step and the need for a BWA index / program.
 notes
 Requires bwa, bedtools, samtools and a unix environment. Takes a Fastq file and trims it based on alignment position respective to specified intervals.
 Due to no validity checking also check that these are for the same reference file!
