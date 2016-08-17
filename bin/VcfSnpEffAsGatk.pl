@@ -12,44 +12,57 @@ END
 
 die "no valid 'in.vcf' specified on command line\n$use" if(not(defined($ARGV[0])) ||not -e $ARGV[0]);
 #main
-AddZScoresBasedOnAdVals($ARGV[0],$ARGV[1]);
+main($ARGV[0],$ARGV[1]);
 
-sub AddZScoresBasedOnAdVals{
+sub main{
 	my $vcfin = $_[0];#'/home/terpstramm/Downloads/s12-193.annotated.vcf';
 	my $out;
 	if($_[1] && not(-e $_[1])){
 		my $vcfout = $_[1];
 		open($out,'>',$vcfout) or die 'Cannot write vcf file';
 	}else{
-		warn 'warning: no output vcf file specified printing to STDOUT'."\n";
+		warn localtime(time())." [WARN] $0: no output vcf file specified printing to STDOUT"."\n";
 		$out =*STDOUT;
 	}
 	
 	
+	warn localtime(time())." [INFO] $0: Parsing header.";
 	my $vcf = Vcf->new(file=>$vcfin);
+	#warn "parse header";
 	$vcf->parse_header();
-	my $annotations = GetAnnFunctionalAnnotations($vcf->get_header_line(key=>'INFO', ID=>'ANN'));
-	SetHeadersSNPEFFANN('vcf' => $vcf, 'ann' => $annotations);
+	#warn "get annotations";
+	my $annotations;
+	print "####".Dumper($vcf->get_header_line(key=>'INFO', ID=>'ANN')) ."####";
+	my $annheaderline = $vcf->get_header_line(key=>'INFO', ID=>'ANN');
+	if(defined($annheaderline) && scalar(@{$annheaderline})){
+		$annotations = GetAnnFunctionalAnnotations($annheaderline);
+		#warn "set annotations";
+		SetHeadersSNPEFFANN('vcf' => $vcf, 'ann' => $annotations);
+	}else{
+		warn localtime(time())." [WARN] $0: Possible broken/empty input no ANN info field found!";
+	}
 	print {$out} $vcf->format_header();
 	#die "header check";
 	#$vcf->recalc_ac_an(0);
+	warn localtime(time())." [INFO] $0: Iterating records."; my $records=0;
 	while (my $x=$vcf->next_data_hash()){
-		
-		FillSNPEFFANNFields('record' => $x,'ann' => $annotations);
-
+		if(defined($annheaderline) && scalar(@{$annheaderline})){
+			FillSNPEFFANNFields('record' => $x,'ann' => $annotations);
+		}
 		print {$out} $vcf->format_line($x);
-
-#                if(scalar(@{GetAlt($x)})>1){
+		$records++;
+#               if(scalar(@{GetAlt($x)})>1){
 #				die Dumper($x)."\n".GetAlt($x)."\n".$. ;
 #		}
 
 	}
 	$vcf->close();
+	warn localtime(time())." [INFO] $0: Done. Processed $records";
 }
 
 sub GetAnnFunctionalAnnotations {
 	my $annParsed = shift @_ or die "no input given for subroutine";
-	die Dumper($annParsed) if(not(defined($annParsed -> [0] -> {'Description'})));
+	die "invalid input".Dumper($annParsed) if(not(defined($annParsed -> [0] -> {'Description'})));
 	my $anndescr = $annParsed -> [0] -> {'Description'};
 	$anndescr =~ s/Functional\ annotations\:\ \'|\'//g;
 	my $anndescrvcf = $anndescr;
