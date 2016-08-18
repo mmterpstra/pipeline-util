@@ -29,7 +29,7 @@ note: don't worry anymore about fixing typoos, missing any fields, exporting unp
 END
 #
 
-	die "Invalid vcf file specified!! '$ARGV[0]'\n $use\n$!" if(not(-e $ARGV[0]));
+	die localtime(time())." ## $0: Invalid vcf file specified!! '$ARGV[0]'\n $use\n$!" if(not(-e $ARGV[0]));
 	AccumulateFieldsVCF($ARGV[0]);
 }
 sub AccumulateFieldsVCF{
@@ -72,7 +72,15 @@ sub AccumulateFieldsVCF{
 	#
 	$q = \%FieldInfo;
 	#print Dumper($q);
-	print " -F ".join(" -F ",sort(keys(%{$q->{'F'}})));
-	print " -GF ".join(" -GF ",sort(keys(%{$q->{'GF'}})));
+	if(join(" -F ",sort(keys(%{$q->{'F'}}))) ne ""){
+		print " -F ".join(" -F ",sort(keys(%{$q->{'F'}}))) if(join(" -F ",sort(keys(%{$q->{'F'}}))) ne "");
+	}else{
+                warn localtime(time())." [WARN] $0: No fields(-F) present. Consider validating input.\n"
+	}
+	if(join(" -GF ",sort(keys(%{$q->{'GF'}}))) ne ""){
+		print " -GF ".join(" -GF ",sort(keys(%{$q->{'GF'}})));
+	}else{
+		warn localtime(time())." [WARN] $0: No genotypefields(-GF) present. Consider validating input.\n"
+	}
 	$vcf->close();
 }

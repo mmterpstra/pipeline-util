@@ -52,6 +52,8 @@ sub VcfHeaderToTable{
 	$vcf->recalc_ac_an(0);
 	my %filterdata;
 	
+	$filterdata{'Total'}=0;
+
 	while (my $x=$vcf->next_data_hash()){
 		$filterdata{'Total'}++;
 		for my $filter (@{$x->{'FILTER'}}){
@@ -75,15 +77,20 @@ sub VcfHeaderToTable{
 	print "\t".'Filtername'."\t".'Count'."\n";
 	
 	print "\t".'Total'."\t".$filterdata{'Total'}."\n";
-	for my $filterName (keys(%{getHashRef($filterdata{'SingleCounts'})})){
-		print "\t".$filterName."\t".$filterdata{'SingleCounts'}{$filterName}."\n";
-	}
-	print "Count by combined filters:"."\n";
-	print "\t".'Filtername(Comma,Separated)'."\t".'Count'."\n";
-	print "\t".'Total'."\t".$filterdata{'Total'}."\n";
+	if(defined($filterdata{'SingleCounts'}) && defined(getHashRef($filterdata{'SingleCounts'}))){
+		for my $filterName (keys(%{getHashRef($filterdata{'SingleCounts'})})){
+			print "\t".$filterName."\t".$filterdata{'SingleCounts'}{$filterName}."\n";
+		}
+
+		print "Count by combined filters:"."\n";
+		print "\t".'Filtername(Comma,Separated)'."\t".'Count'."\n";
+		print "\t".'Total'."\t".$filterdata{'Total'}."\n";
 	
-	for my $filterName (keys(%{getHashRef($filterdata{'Complextable'})})){
-		print "\t".$filterName."\t".$filterdata{'Complextable'}{$filterName}."\n";
+		for my $filterName (keys(%{getHashRef($filterdata{'Complextable'})})){
+			print "\t".$filterName."\t".$filterdata{'Complextable'}{$filterName}."\n";
+		}
+	}else{
+		print "No filter data present pls populate the filter field or the variants.";
 	}
 }
 sub getHashRef{
