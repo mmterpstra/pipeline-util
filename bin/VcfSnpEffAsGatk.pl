@@ -32,7 +32,7 @@ sub main{
 	$vcf->parse_header();
 	#warn "get annotations";
 	my $annotations;
-	print "####".Dumper($vcf->get_header_line(key=>'INFO', ID=>'ANN')) ."####";
+	#warn "####".Dumper($vcf->get_header_line(key=>'INFO', ID=>'ANN')) ."####";
 	my $annheaderline = $vcf->get_header_line(key=>'INFO', ID=>'ANN');
 	if(defined($annheaderline) && scalar(@{$annheaderline})){
 		$annotations = GetAnnFunctionalAnnotations($annheaderline);
