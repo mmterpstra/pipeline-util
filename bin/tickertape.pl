@@ -22,14 +22,6 @@ GetOptions ("read1|r1|1=s"   => \$opts -> {'R1'},      # string
 main();
 
 sub main{
-	#modify for getting the part of the sequence not overhanging probe:
-	#get the overhang.
-	#scan the cigar to see how mutch that is in sequence space
-	#trim fastq
-	#print the fastq
-	#while
-	#get some coffee x 5423456987634567890987654345678 ^ 234567890987654323456789 ^ 2345678909876545678 ^ 3456789097654
-	
 	#use:
 	#paste \
 	# <(bedtools intersect -wao -bed -a <(\
@@ -60,13 +52,15 @@ sub main{
 	
 	while(<>){
 		$record = DumbReader($_);
+		Validate($record);
 		if(HasPairedEndTag($record)){
 			my $r1 = $record;
 			$_ = <>;
 			my $r2 = DumbReader($_) or confess "Cannot read paired data although pe flags set";
+			Validate($r2);
 			if(my $fqs = TrimReadsByProbe($r1,$r2)){
 				#get a nice result dump
-				warn Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/1308/);
+				warn Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/62868/);
 				if(GetFqLength($fqs -> [0]) >=  20 && GetFqLength($fqs -> [1]) >= 20){
 					if($opts -> {'R2'} && $opts -> {'R1'}){
 						print {$fqouthandles -> [1]} WriteFastq($fqs -> [0]);
@@ -79,7 +73,8 @@ sub main{
 			}
 		}else{
 			if(my $fq = TrimReadByProbe($record)){
-				#warn Dumper($fq).$. if(GetNameRead($record) =~  m/1308/);
+				#inpect record
+				#warn Dumper($fq,$record).$. if(GetNameRead($record) =~  m/62868/);
 				if(GetFqLength($fq) >= 20){
 					print {$fqouthandles -> [0]} WriteFastq($fq);
 				}
@@ -103,6 +98,11 @@ sub EqualReadRecords{
 		return 1;
 	}
 	return 0;
+}
+
+sub Validate{
+	my $r = shift(@_);
+	die "## $0 ## Invalid record".Dumper($r) if(not(GetHeaderRead($r) eq GetH2($r)));
 }
 sub GetChrRead{
 	my $r=shift(@_);
@@ -340,7 +340,7 @@ sub Get3PrimeOverlap{
 		
 		if(GetStrandRead($r) eq '+'
 			&& GetEndProbe($r) + $wiggle >= GetEndRead($r)
-			&& GetStartProbe($r) +1 <= GetEndRead($r)){
+			&& GetStartProbe($r) + 1 <= GetEndRead($r)){
 				
 			#--->read>
 			#-----<probe<
@@ -398,7 +398,8 @@ sub TrimReadByProbe{
 		
 		if($overlap){
 			my $trimOffset = CalcTrim($overlap,$r);
-			TrimFq($trimOffset,$fq) if($trimOffset < (40 + $wiggle));
+			#this here effects trimming parameters
+			TrimFq($trimOffset,$fq);
 			#confess Dumper(\$overlap,$r,$fq) if($. == 6);
 		}
 		return $fq;
@@ -600,7 +601,7 @@ sub GetFqLength {
 	my $fq = shift(@_);
 	
 	if(defined($fq->[1]) && defined($fq->[2]) &&(length($fq->[1]) == length($fq->[2]) || $fq->[2] eq '*'|| $fq->[2] eq '')){
-		if($fq->[2] eq '*'|| $fq->[2] eq ''){
+		if($fq->[2] eq '*'||($fq->[2] eq '' && $fq->[1] ne '')){
 			warn "[WARN] No fastq qualtities found! Defaulting to ascii '5'";
 			$fq -> [2] = '5' x length($fq -> [1]);
 		}

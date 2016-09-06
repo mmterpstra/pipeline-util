@@ -1,0 +1,13 @@
+1	10	50	BorderStart2	0	-
+1	210	250	basic	0	+
+1	500	540	plusclose1	0	+
+1	560	600	plusclose2	0	+
+1	800	840	minusclose1	0	-
+1	860	900	minusclose2	0	-
+1	1100	1140	pmclose1	0	+
+1	1160	1200	pmclose2	0	-
+1	1400	1440	mpclose1	0	-
+1	1460	1500	mpclose2	0	+
+1	2340	2380	BorderEnd2	0	-
+2	60	100	BorderStart1	0	+
+2	550	590	BorderEnd1	0	+
