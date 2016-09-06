@@ -68,6 +68,8 @@ sub main{
 		}
 		
 		$recordsLast -> [0] = $record;
+	        warn "record,recordsLast,buffer".Dumper($record,$recordsLast,$buffer).$. if(GetNameRead($record) =~  m/820$/);
+		
 	}
 	#purge buffer
 	push(@{$buffer}, @{$recordsLast});

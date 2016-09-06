@@ -58,9 +58,11 @@ sub main{
 			$_ = <>;
 			my $r2 = DumbReader($_) or confess "Cannot read paired data although pe flags set";
 			Validate($r2);
+                        warn $0.Dumper($r1,$r2).$. if(GetNameRead($r1) =~  m/820/);
+
 			if(my $fqs = TrimReadsByProbe($r1,$r2)){
 				#get a nice result dump
-				warn Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/62868/);
+				warn $0.Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/820/);
 				if(GetFqLength($fqs -> [0]) >=  20 && GetFqLength($fqs -> [1]) >= 20){
 					if($opts -> {'R2'} && $opts -> {'R1'}){
 						print {$fqouthandles -> [1]} WriteFastq($fqs -> [0]);
@@ -72,9 +74,11 @@ sub main{
 				}
 			}
 		}else{
+                        warn $0.Dumper($record).$. if(GetNameRead($record) =~  m/820/);
+
 			if(my $fq = TrimReadByProbe($record)){
 				#inpect record
-				#warn Dumper($fq,$record).$. if(GetNameRead($record) =~  m/62868/);
+				warn $0.Dumper($fq,$record).$. if(GetNameRead($record) =~  m/820/);
 				if(GetFqLength($fq) >= 20){
 					print {$fqouthandles -> [0]} WriteFastq($fq);
 				}
@@ -84,7 +88,7 @@ sub main{
 		#warn "While loop done";
 		#die Dumper($record) if($. > 100);
 	}
-		
+
 }
 
 sub EqualReadRecords{
@@ -102,7 +106,9 @@ sub EqualReadRecords{
 
 sub Validate{
 	my $r = shift(@_);
-	die "## $0 ## Invalid record".Dumper($r) if(not(GetHeaderRead($r) eq GetH2($r)));
+	my $n1 = GetHeaderRead($r);
+	$n1 = substr($n1,0,-2) if(substr($n1,-2) eq '/1' || substr($n1,-2) eq '/2');
+	die "## $0 ## Invalid record" . Dumper($r) if(not(GetH2($r) eq $n1));
 }
 sub GetChrRead{
 	my $r=shift(@_);
@@ -417,7 +423,7 @@ sub TrimReadsByProbe{
 	my $overlapR2 = GetR2Overlap($r2);
 	
 	my $overlapR1;
-	if($overlapR2){
+	if($overlapR2 && $overlapR2 > 0){
 		$overlapR1 = GetR1Overlap($r1,GetNameProbe($r2));
 		
 		#warn $overlapR1.Dumper($r1).GetNameProbe($r2);
@@ -439,7 +445,7 @@ sub TrimReadsByProbe{
 		
 		#warn Dumper($overlapR2,$r2).$.;
 		
-		if($overlapR2){
+		if($overlapR2 && $overlapR2 > 0){
 			
 			my $trimOffsetR2 = CalcTrim($overlapR2,$r2);
 			#warn Dumper(\$overlapR2,\$trimOffsetR2,$r2);
@@ -459,7 +465,7 @@ sub TrimReadsByProbe{
 			$fqs->[0]=ReverseComplementFq($fqs->[0]);
 		}
 		
-		if($overlapR1){
+		if($overlapR1 && $overlapR1 > 0){
 			my $trimOffsetR1 = CalcTrim($overlapR1,$r1);
 			TrimFq($trimOffsetR1,$fqs -> [0]);
 			#die Dumper(\$overlap,$r,$fq);
@@ -676,8 +682,10 @@ sub GetR2Overlap{
 		&& GetStrandProbe($r) ne '.'){
 		
 		#somethimes this is too complex to find a good solution as is. Because the cigar also effects the start and end points. And 
+		#die "fix overlap"
 		if(GetStrandRead($r) eq '+' &&
-			GetStartRead($r) - $wiggleR2  <= GetStartProbe($r) && 
+			(GetStartRead($r) - $wiggleR2  <= GetStartProbe($r) || 
+			GetStartRead($r) + $wiggleR2  >= GetStartProbe($r)) &&
 			GetEndRead($r) >= GetStartProbe($r) ){
 			
 			
@@ -689,7 +697,8 @@ sub GetR2Overlap{
 			#warn Dumper(\$overlap,\$overlap,$r)."#";
 		}elsif(GetStrandRead($r) eq '-' &&
 			GetStartRead($r) <= GetEndProbe($r) && 
-			GetEndRead($r) + $wiggleR2  >= GetEndProbe($r) ){
+			(GetEndRead($r) + $wiggleR2  >= GetEndProbe($r) || 
+			GetEndRead($r) - $wiggleR2  <= GetEndProbe($r))){
 				
 			#---<read<---
 			#--<probe<---
