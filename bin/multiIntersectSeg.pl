@@ -35,6 +35,7 @@ sub main {
 		close($bedHandle);
 		push(@bedFiles,$bedFile);
 	}
+	warn Dumper(\@bedFiles);
 	my $dataMultiInter = MultiInter(\@bedFiles);
 	
 	#print string/table $dataMultiInter;
@@ -65,7 +66,7 @@ sub PlotSegData {
 	for my $sample1 (sort(keys(%{$dataMultiInter->{'samples'}}))){
 		for my $sample2 (sort(keys(%{$dataMultiInter->{'samples'}}))){
 			
-			next if($sampleCombi->{$sample1}->{$sample2} || $sampleCombi->{$sample2}->{$sample1} || $sample2 eq $sample1);
+			next if($sampleCombi->{$sample1}->{$sample2} || $sample2 eq $sample1);
 			$sampleCombi->{$sample1}->{$sample2}++;
 			my $src = GetSourceDir();
 			my $cmd = "Rscript $src/PlotSegsSampleVsSample.R $mergedData $sample1 $sample2 2>/dev/null";
@@ -143,7 +144,7 @@ sub ParseMultiInter{
 	
 	my $sample;
 	#null intersect== no original annotation in file
-	if(not($t[6] eq ".")){
+	if(($t[6] ne ".") && ($t[6] ne "")){
 		%{$sample} = split/;|=/,($t[6]);
 		$sample->{'chromSegment'}=$t[3];
 		$sample->{'startSegment'}=($t[4]+1);
@@ -152,10 +153,9 @@ sub ParseMultiInter{
 		$dataMultiInter->{'samples'}{ $sample->{'ID'} }++;
 		
 		map{$dataMultiInter->{'annotations'}->{ $_ }++;}(keys(%{$sample}));			
-	}
-	
 	#												chrom,start0,end
-	push(@{$dataMultiInter->{'regions'}->{join("\t",($t[0],($t[1] + 1),$t[2]))}},$sample);
+		push(@{$dataMultiInter->{'regions'}->{join("\t",($t[0],($t[1] + 1),$t[2]))}},$sample);
+	}
 	return $dataMultiInter;
 }
 
