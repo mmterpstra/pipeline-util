@@ -1,12 +1,12 @@
 easyblock = 'Tarball'
 
 name = 'pipeline-util'
-version = '0.4.5'
+version = '0.4.6'
 
 homepage = 'https://github.com/mmterpstra/%s' % (name)
 description = """Misc tools"""
 
-toolchain = {'name': 'foss', 'version': '2016a'}
+toolchain = {'name': 'foss', 'version': '2015b'}
 
 source_urls = [('https://github.com/mmterpstra/%s/archive/' % (name) )]
 sources = [ '%s.tar.gz' % version ]

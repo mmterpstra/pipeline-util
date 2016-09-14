@@ -7,14 +7,14 @@ warning("args=datatable.txt Sample Sample");
 
 args <- commandArgs(trailingOnly = TRUE)
 #print(args)
-tsv  <- args[1]
-sample1<-args[2]
-sample2<-args[3]
+#tsv  <- args[1]
+#sample1<-args[2]
+#sample2<-args[3]
 
 
-#tsv    <-"/scratch/umcg-mterpstra/projects/WES_novogene_path_P8//varscan.T11_20692//multi/merged.txt"
-#sample1<-"T11_20692"
-#sample2<-"T11_23706"
+tsv    <-"/scratch/umcg-mterpstra/projects/WES_novogene_path_P8//varscan.T11_20692//multi/merged.txt"
+sample1<-"T11_20692"
+sample2<-"T11_23706"
 
 seg.data.frame<-read.table(tsv, sep="\t", header=TRUE)
 
@@ -33,8 +33,9 @@ chromtags.data.frame<-chromtags.data.frame[with(chromtags.data.frame, order(offs
 
 pdf(file=paste(base,sample1,sample2,"pdf", sep="."), height = 7, width = 28)
 
-pairwise.table.tsv = data.frame(seg.data.frame$chrom,seg.data.frame$start,seg.data.frame$end,(seg.data.frame[ , paste(sample1,"seg.mean", sep=".")] - seg.data.frame[ , paste(sample2,"seg.mean", sep=".")]))
-colnames(pairwise.table.tsv)<-c('chrom','start','end',paste('log2( ',sample1,' / normal ) - log2( ',sample2,' / normal )', sep="")  )
+#num.mark	seg.mean
+pairwise.table.tsv = data.frame(seg.data.frame[ , paste(sample1,"ID", sep=".")], seg.data.frame$chrom,seg.data.frame$start,seg.data.frame$end,seg.data.frame[ , paste(sample1,"num.mark", sep=".")],seg.data.frame[ , paste(sample1,"seg.mean", sep=".")],(seg.data.frame[ , paste(sample1,"seg.mean", sep=".")] - seg.data.frame[ , paste(sample2,"seg.mean", sep=".")]))
+colnames(pairwise.table.tsv)<-c('ID','chrom','start','end','num.mark','seg.mean',paste('log2( ',sample1,' / normal ) - log2( ',sample2,' / normal )', sep="")  )
 write.table(pairwise.table.tsv, sep="\t", file=paste(base,sample1,sample2,"tsv", sep="."), row.names=FALSE, quote=FALSE)
 
 
