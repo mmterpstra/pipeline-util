@@ -39,16 +39,16 @@ sub main {
 	my $dataMultiInter = MultiInter(\@bedFiles);
 	
 	#print string/table $dataMultiInter;
-	open(my $mergedHandle,'>',$outDir."/merged.txt") or die "cannot write ".$outDir."/merged.txt";
+	open(my $mergedHandle,'>',$outDir."/merged.tsv") or die "cannot write ".$outDir."/merged.tsv";
 	print $mergedHandle MultiInterToStringWithOffsets($dataMultiInter,$chrLenDat);
 	close $mergedHandle;
 	
 	#print string/table $chrLenDat
-	open(my $chrLenHandle,'>',$outDir."/merged.chrlen.txt") or die "cannot write ".$outDir."/merged.chrlen.txt";
+	open(my $chrLenHandle,'>',$outDir."/merged.chrlen.tsv") or die "cannot write ".$outDir."/merged.chrlen.tsv";
 	print $chrLenHandle ChomLengthToString($chrLenDat);
 	close $chrLenHandle;
 	
-	PlotSegData($dataMultiInter,$outDir."/merged.txt");
+	PlotSegData($dataMultiInter,$outDir."/merged.tsv");
 	
 	warn localtime(time())." [INFO] Done\n";
 }
