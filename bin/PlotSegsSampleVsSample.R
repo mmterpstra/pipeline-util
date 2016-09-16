@@ -18,9 +18,9 @@ sample2<-args[3]
 
 seg.data.frame<-read.table(tsv, sep="\t", header=TRUE)
 
-base <- sub(pattern=".txt", replacement="", tsv, fixed=TRUE)
+base <- sub(pattern=".tsv", replacement="", tsv, fixed=TRUE)
 
-chromtags.data.frame<-read.table(paste(base,"chrlen.txt", sep="."), sep="\t", header=TRUE)
+chromtags.data.frame<-read.table(paste(base,"chrlen.tsv", sep="."), sep="\t", header=TRUE)
 
 
 #print(paste(base,sample1,sample2,"pdf", sep="."))
