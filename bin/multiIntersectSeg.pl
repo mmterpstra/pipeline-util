@@ -22,7 +22,10 @@ sub main {
 	for my $segFile (@ARGV){
 		my $seg=SegNew('file'=>$segFile);
 		my $bedFile=$segFile;
-		$bedFile=~s/\.seg$/\.bed/;
+		
+		if(not($bedFile=~s/\.seg$/\.bed/){
+			$bedFile.=".bed";
+		}
 		
 		warn localtime(time())." [INFO] Converting $segFile into bed\n";
 		
