@@ -17,8 +17,11 @@ my $opts;
 GetOptions ("read1|r1|1=s"   => \$opts -> {'R1'},      # string
 	"read2|r2|2=s"   => \$opts -> {'R2'},
 	"unpaired|un|U=s"   => \$opts -> {'U'},
-	"samout|s=s"	=> \$opts -> {'s'}) or die("Error in command line arguments\n");
+	"samout|s=s"	=> \$opts -> {'s'},
+	"samheader|h=s"  => \$opts -> {'h'},
+	) or die("Error in command line arguments\n");
 
+my $probemetrics;
 main();
 
 sub main{
@@ -50,12 +53,16 @@ sub main{
 		my $cmd = "gzip -c > ".$opts -> {'U'};
 		open($fqouthandles -> [0],'|-',$cmd) or die "Cannot write '$cmd'";
 	}
-	if($opts -> {'s'}){
-		my $cmd = $opts -> {'s'};
-		open($samOutHandle,'>',$cmd) or die "Cannot write '$cmd'";
-	}
-	my $probepemetrics;
 	
+	($opts -> {'h'} && -e $opts -> {'h'}) or die "SAM header file should be specified";
+
+	if($opts -> {'s'} && defined($opts -> {'h'}) && -e $opts -> {'h'}){
+		PrependHeader($opts -> {'s'},$opts -> {'h'});		
+		my $cmd = $opts -> {'s'};
+		open($samOutHandle,'>>',$cmd) or die "Cannot write '$cmd'";
+	}
+
+	#
 	while(<>){
 		$record = DumbReader($_);
 		Validate($record);
@@ -67,7 +74,6 @@ sub main{
                         warn $0.Dumper($r1,$r2).$. if(GetNameRead($r1) =~  m/820/);
 
 			if(my $fqs = TrimReadsByProbe($r1,$r2)){
-				$probepemetrics = GetPeStats($r1,$r2);
 				my @sams = TrimSamReadsByProbe($r1,$r2);
 				#get a nice result dump
 				#warn $0.Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/820/);
@@ -86,7 +92,7 @@ sub main{
 				}
 			}
 		}else{
-                       #warn $0.Dumper($record).$. if(GetNameRead($record) =~  m/820/);
+                	#warn $0.Dumper($record).$. if(GetNameRead($record) =~  m/820/);
 
 			if(my $fq = TrimReadByProbe($record)){
 				my $sam = TrimSamReadByProbe($record);
@@ -156,11 +162,119 @@ sub TrimSamReadsByProbe{
 			$sam1 = TrimSam($sam1,$overlapR1);
 			#die Dumper(\$overlap,$r,$fq);
 		}
-		
+		my $pn = ".";
+		$pn = GetNameProbe($r2) if($overlapR2);
+		$probemetrics = GetProbePeMetrics($probemetrics,$pn,$sam1,$sam2);
 		#cluck "TrimReadsByProbe result:".Dumper($fqs);
 		return ($sam1,$sam2);
 	}else{
 		return undef;
+	}
+}
+sub GetProbePeMetrics{
+	my ($metrics,$probename,$sam1,$sam2)=@_;
+	my $len = EstimateFragmentSizePE($sam1,$sam2);
+	$metrics -> {'probepefragmentsizes'} -> {$probename} -> {$len} ++;
+	my $probenameclean=$probename;
+	$probenameclean =~ s/\|.*//g;
+	$probenameclean =~ tr/\+\-/pm/;
+	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'file'}))){
+		$metrics -> {'probesamfiles'} -> {$probename} -> {'file'} = $opts -> {'s'}."p".$probenameclean.".sam";
+	}
+	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}))){
+		PrependHeader($metrics -> {'probesamfiles'} -> {$probename} -> {'file'},$opts -> {'h'});	
+		open($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'},'>>',$metrics -> {'probesamfiles'} -> {$probename} -> {'file'});
+	}
+	print {$metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}} SamAsString($sam1).SamAsString($sam2);
+	die 'metrics '. Dumper($metrics)." ";
+	return $metrics;
+}
+sub PrependHeader {
+	my ($samfile, $headersamfile) = @_;
+	my $cmd = "grep -P  \"^\@\"  " . $headersamfile. " > ". $samfile;
+	warn $cmd;
+	system($cmd);
+}
+sub GetProbeSeMetrics{
+	my ($metrics,$probename,$sam)=@_;
+	my $len = EstimateFragmentSizeSE($probename,$sam);
+	$metrics -> {'probesefragmentsizes'} -> {$probename} -> {$len} ++;
+	my $probenameclean=$probename;
+	$probenameclean =~ s/\|.*//g;
+	$probenameclean =~ tr/\+\-/pm/;
+	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'file'}))){
+		$metrics -> {'probesamfiles'} -> {$probename} -> {'file'} = $opts -> {'s'}."p".$probenameclean.".sam";
+	}
+	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}))){
+		PrependHeader($metrics -> {'probesamfiles'} -> {$probename} -> {'file'},$opts -> {'h'});	
+		open($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'},'>>',$metrics -> {'probesamfiles'} -> {$probename} -> {'file'});
+	}
+	print {$metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}} SamAsString($sam);
+	die 'metrics '. Dumper($probename,$sam,$metrics)." " if($probename ne "." && $. > 200);
+	warn 'metrics '. Dumper($metrics)." " if($probename ne "." && $. > 100);
+	return $metrics;
+}
+sub EstimateFragmentSizeSE{
+	my ($probename,$s)=@_;
+	my $fragmentSize = undef;
+	if($probename ne "." && not(IsReverseSamAlignment($s))){
+		#bla
+		my $start = GetSamPosRead($s);
+		my $end = GetProbeStartRead($probename);
+		$fragmentSize = $end - $start + 1;#????
+	}elsif($probename ne "." && IsReverseSamAlignment($s)){
+		#blabla
+		my $start = GetProbeEndRead($probename);
+		my $end = GetSamPosRead($s) + EstimateSamCigarLengthRead($s);
+		 $fragmentSize = $end - $start + 1;#????
+	}else{
+		$fragmentSize = 'discordant';
+	}
+	return $fragmentSize;
+}
+
+sub GetProbeStartRead {
+	#die Dumper(@_);
+	my $probename = shift(@_);
+	my (undef,$pStart) = split("_",$probename);
+	return $pStart;
+}
+sub GetProbeEndRead {
+	#die Dumper(@_);
+	my $probename = shift(@_);
+	my (undef,undef,$pEnd) = split("_",$probename);
+	return $pEnd;
+}
+sub EstimateFragmentSizePE{
+	my ($sam1, $sam2) = @_;
+	my $fragmentSize = undef;
+	if(IsReverseSamAlignment($sam2) && not(IsReverseSamAlignment($sam1))){
+		#bla
+		my $start = GetSamPosRead($sam1);
+		my $end = GetSamPosRead($sam2) + EstimateSamCigarLengthRead($sam2);
+		$fragmentSize = $end - $start + 1;#????
+	}elsif(not(IsReverseSamAlignment($sam2)) && IsReverseSamAlignment($sam1) ){
+		#blabla
+		my $start = GetSamPosRead($sam2);
+		my $end = GetSamPosRead($sam1) + EstimateSamCigarLengthRead($sam1);
+		 $fragmentSize = $end - $start + 1;#????
+	}else{
+		$fragmentSize = 'discordant';
+	}
+	return $fragmentSize;	
+}
+sub EstimateSamCigarLengthRead {
+	my $s = shift @_;
+	my $cigar = CigarSamParser($s);
+	my $len = 0;	
+	while(my $operation = shift(@{$cigar})){
+		#if($operation =~ /^[M\=X]$/){$operation =~ /^[IS]$/ $operation =~ /^[DN]$/
+		my ($operator,$amount) = %{$operation};
+		if($operator =~ /^[M\=X]$/){
+			$len+=$amount;
+		}elsif($operator =~ /^[D]$/){
+			$len+=$amount;
+		}
 	}
 }
 sub TrimSamReadByProbe {
@@ -174,13 +288,16 @@ sub TrimSamReadByProbe {
 		#if(IsReverseAlignment($r)){
 		#	$fq=ReverseComplementFq($fq);
 		#}
-		
+
 		if($overlap){
 			#my $trimOffset = CalcTrim($overlap, $r);
 			#this here effects trimming parameters
 			TrimSam($overlap, $sam);
 			#confess Dumper(\$overlap,$r,$fq) if($. == 6);
 		}
+		my $pn = ".";
+		$pn = GetNameProbe($r) if($overlap);
+		$probemetrics = GetProbeSeMetrics($probemetrics,$pn,$sam);
 		return $sam;
 	}else{
 		

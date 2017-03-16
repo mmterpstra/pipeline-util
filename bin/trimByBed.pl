@@ -9,6 +9,7 @@ main();
 sub main {
 	my $opts;
 	warn "[INFO] cmdline:".join(' ',($0,@ARGV))."\n";
+	#-n NEWSAM
 	getopts('r:b:i:o:s:n:', \%{$opts});
 	#warn Dumper($opts);
 	if(not( defined($opts -> {'b'}) && -e $opts -> {'b'} && defined($opts -> {'o'}) && 
@@ -53,7 +54,7 @@ sub wrapper {
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
 	"paste - ".$opts -> {'t'}.".samfifo |".
-	"perl ".$opts -> {'bin'}."tickertape.pl -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." &".
+	"perl ".$opts -> {'bin'}."tickertape.pl -h ".$opts -> {'t'} . ".tmp.sam -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." &".
 	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
 	warn "[INFO] system call:". $cmd."\n";
