@@ -57,9 +57,10 @@ sub main{
 	($opts -> {'h'} && -e $opts -> {'h'}) or die "SAM header file should be specified";
 
 	if($opts -> {'s'} && defined($opts -> {'h'}) && -e $opts -> {'h'}){
-		PrependHeader($opts -> {'s'},$opts -> {'h'});		
-		my $cmd = $opts -> {'s'};
-		open($samOutHandle,'>>',$cmd) or die "Cannot write '$cmd'";
+				
+		my $cmd = "bash -c 'samtools sort -T ".$opts -> {'s'}.".sorttmp - | tee >(samtools index - ".$opts -> {'s'}.".bai ) > ".$opts -> {'s'}.".bam'"; warn $cmd;
+		open($samOutHandle,'|-',$cmd) or die "Cannot write '$cmd'";
+		PrependHeaderHandle($samOutHandle,$opts -> {'h'});
 	}
 
 	#
@@ -77,11 +78,12 @@ sub main{
 				my @sams = TrimSamReadsByProbe($r1,$r2);
 				#get a nice result dump
 				#warn $0.Dumper($fqs,$r1,$r2).$.if(GetNameRead($r1) =~  m/820/);
+				if($opts -> {'s'} && GetFqLength($fqs -> [0]) >=  10 && GetFqLength($fqs -> [1]) >= 10){
+					print {$samOutHandle} SamAsString($sams[0]);
+					print {$samOutHandle} SamAsString($sams[1]);
+				}									
 				if(GetFqLength($fqs -> [0]) >=  20 && GetFqLength($fqs -> [1]) >= 20){
-					if($opts -> {'s'}){
-						print {$samOutHandle} SamAsString($sams[0]);
-						print {$samOutHandle} SamAsString($sams[1]);
-					}					
+
 					if($opts -> {'R2'} && $opts -> {'R1'}){
 						print {$fqouthandles -> [1]} WriteFastq($fqs -> [0]);
 						print {$fqouthandles -> [2]} WriteFastq($fqs -> [1]);
@@ -112,8 +114,12 @@ sub main{
 		#warn "While loop done";
 		#die Dumper($record) if($. > 100);
 	}
-	warn "## $0 ## INFO: Done with $. lines processed"
-
+	
+	warn "## $0 ## INFO: Done with $. lines processed";
+	warn 'metrics '. Dumper($probemetrics)." ";
+	open(my $loghandle ,'>',$opts -> {'s'}.".stats.log") or die "Cannot write logfile";
+	print {$loghandle} MetricsAsString($probemetrics);
+	close $loghandle;
 }
 
 #sub TrimSamReadsByProbe {
@@ -138,29 +144,31 @@ sub TrimSamReadsByProbe{
 		$overlapR1 = GetR1Overlap($r1,GetNameProbe($r2));
 		
 		#warn $overlapR1.Dumper($r1).GetNameProbe($r2);
+	}else{
+		$overlapR1 = GetR1Overlap($r1);
 	}
-	#else{
-	#	$overlapR1 = GetR1Overlap($r1);
-	#}
 	
 	
 	if(IsPrimaryAlignment($r1)> 0){#does this work??
 		#r2
 		#warn Dumper($overlapR2,$r2).$.;
 		my $sam2 = GetSam($r2);
+		my $sam1 = GetSam($r1);
 		if($overlapR2 && $overlapR2 > 0){
-			#get the 			
-			$sam2 = TrimSam($sam2,$overlapR2);
+			#get the
+			#warn "TrimBefore\t".Dumper($overlapR2,$sam2,$sam1)." " if( $overlapR2 > 10);
+			$sam2 = TrimSam($overlapR2,$sam2);
 			#warn Dumper(\$overlapR2,\$trimOffsetR2,$r2);
 			#die Dumper(\$overlap,$r,$fq);
 		}
 		
 		#r1
-		my $sam1 = GetSam($r1);
+		$sam1 = GetSam($r1);
 		if($overlapR1 && $overlapR1 > 0){
 			
-			$sam1 = TrimSam($sam1,$overlapR1);
+			$sam1 = TrimSam($overlapR1,$sam1);
 			#die Dumper(\$overlap,$r,$fq);
+			#die "TrimAfter\t".Dumper($overlapR2,$sam2,$overlapR1,$sam1)." " if( $overlapR2 > 10);
 		}
 		my $pn = ".";
 		$pn = GetNameProbe($r2) if($overlapR2);
@@ -182,18 +190,56 @@ sub GetProbePeMetrics{
 		$metrics -> {'probesamfiles'} -> {$probename} -> {'file'} = $opts -> {'s'}."p".$probenameclean.".sam";
 	}
 	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}))){
-		PrependHeader($metrics -> {'probesamfiles'} -> {$probename} -> {'file'},$opts -> {'h'});	
-		open($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'},'>>',$metrics -> {'probesamfiles'} -> {$probename} -> {'file'});
+		#my $cmd = 'cat > /dev/stderr';
+		my $cmd = "bash -c 'samtools sort -T ".$metrics -> {'probesamfiles'} -> {$probename} -> {'file'}.".sorttmp - | tee >(samtools index - ".$metrics -> {'probesamfiles'} -> {$probename} -> {'file'}.".bai ) > ".$metrics -> {'probesamfiles'} -> {$probename} -> {'file'}.".bam'"; warn $cmd;
+		open($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'},'|-',$cmd) or die "Cannot write file'".$metrics -> {'probesamfiles'} -> {$probename} -> {'file'}.".bam"."' with '$cmd'";
+		PrependHeaderHandle($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'},$opts -> {'h'});
+
+
+		#PrependHeader($metrics -> {'probesamfiles'} -> {$probename} -> {'file'},$opts -> {'h'});	
+		
 	}
 	print {$metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}} SamAsString($sam1).SamAsString($sam2);
-	die 'metrics '. Dumper($metrics)." ";
+	#die 'metrics '. Dumper($metrics)." " if($. > 100);
 	return $metrics;
 }
+
 sub PrependHeader {
 	my ($samfile, $headersamfile) = @_;
 	my $cmd = "grep -P  \"^\@\"  " . $headersamfile. " > ". $samfile;
 	warn $cmd;
 	system($cmd);
+}
+sub PrependHeaderHandle {
+	my ($samout, $headersamfile) = @_;
+	
+	open(my $samin,'<',$headersamfile) or die "[ERROR] cannot open headerfile.";
+	warn "info".Dumper($samout, $headersamfile, $samin)." ";
+	#my $line;
+	while(<$samin>){
+		last if(not(m/^@/));
+		print {$samout} $_;
+		#
+	}
+	#die "val=".$_;
+	close $samin;
+}
+sub MetricsAsString {
+	my $metrics = shift(@_);
+	my $string;
+	$string .= "probe\tfragLenPe\tcount\n";
+	for my $peProbeFrags (keys(%{$metrics -> {'probepefragmentsizes'}})){
+		for my $len (sort(keys(%{$metrics -> {'probepefragmentsizes'} -> {$peProbeFrags}}))){
+			$string .= "$peProbeFrags\t$len\t".$metrics -> {'probepefragmentsizes'} -> {$peProbeFrags} -> {$len}."\n";
+		}
+	}
+	$string .= "probe\tfragLenSe\tcount\n";
+	for my $seProbeFrags (keys(%{$metrics -> {'probesefragmentsizes'}})){
+		for my $len (sort(keys(%{$metrics -> {'probesefragmentsizes'} -> {$seProbeFrags}}))){
+			$string .= "$seProbeFrags\t$len\t".$metrics -> {'probesefragmentsizes'} -> {$seProbeFrags} -> {$len}."\n";
+		}
+	}
+	return $string;
 }
 sub GetProbeSeMetrics{
 	my ($metrics,$probename,$sam)=@_;
@@ -203,7 +249,7 @@ sub GetProbeSeMetrics{
 	$probenameclean =~ s/\|.*//g;
 	$probenameclean =~ tr/\+\-/pm/;
 	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'file'}))){
-		$metrics -> {'probesamfiles'} -> {$probename} -> {'file'} = $opts -> {'s'}."p".$probenameclean.".sam";
+		$metrics -> {'probesamfiles'} -> {$probename} -> {'file'} = $opts -> {'s'}."p".$probenameclean.".bam";
 	}
 	if(not(defined($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}))){
 		PrependHeader($metrics -> {'probesamfiles'} -> {$probename} -> {'file'},$opts -> {'h'});	
@@ -251,6 +297,7 @@ sub EstimateFragmentSizePE{
 	if(IsReverseSamAlignment($sam2) && not(IsReverseSamAlignment($sam1))){
 		#bla
 		my $start = GetSamPosRead($sam1);
+		#warn Dumper(GetSamPosRead($sam2),EstimateSamCigarLengthRead($sam2),$sam2)." ";
 		my $end = GetSamPosRead($sam2) + EstimateSamCigarLengthRead($sam2);
 		$fragmentSize = $end - $start + 1;#????
 	}elsif(not(IsReverseSamAlignment($sam2)) && IsReverseSamAlignment($sam1) ){
@@ -276,6 +323,7 @@ sub EstimateSamCigarLengthRead {
 			$len+=$amount;
 		}
 	}
+	return $len;
 }
 sub TrimSamReadByProbe {
 	my $r= shift(@_);
@@ -377,9 +425,9 @@ sub TrimSam{
 	#right trim based on overlap
 	my $cigar = CigarSamParser($sam);
 	my $process_reverse = 0;
-	$process_reverse++ if((IsReverseSamAlignment($sam) && not(HasPairedEndTag($sam))) ||
-				(IsReverseSamAlignment($sam) && SamHasPairedEndTag($sam) && GetSamReadPairEnd($sam) == 1) ||
-				(not(IsReverseSamAlignment($sam)) && (SamHasPairedEndTag($sam) && GetSamReadPairEnd($sam) == 2)));
+	$process_reverse++ if((IsReverseSamAlignment($sam) && not(SamHasPairedEndTag($sam))) ||
+				(IsReverseSamAlignment($sam) && SamHasPairedEndTag($sam) && GetSamReadPairEnd($sam) == 1) || #should be like this
+				(not(IsReverseSamAlignment($sam)) && (SamHasPairedEndTag($sam) && GetSamReadPairEnd($sam) == 2)) );##the start should be trimmed not the end, or maybe till the end of R1 not (not(IsReverseSamAlignment($sam)) && (SamHasPairedEndTag($sam) && GetSamReadPairEnd($sam) == 2)
 	my $cigarNew;
 	my $hardclip=$trim;
 	#warn "Initial samrecord". Dumper($sam,$cigar, [$hardclip , $trim])." ";
@@ -478,7 +526,7 @@ sub TrimSam{
 		}
 
 		#append to the new reduced cigar
-		if($process_reverse == 1){
+		if($process_reverse){
 			#warn Dumper($sam,$cigar, [$operationNew, $amountNew, $hardclip , $trim])." ";
 			my %h = ($operationNew=> $amountNew);		
 			push(@{$cigarNew},\%h);
@@ -580,7 +628,6 @@ sub GetSamReadPairEnd {
 	if((GetSamFlagRead($s) & 64 )){
 		return 1;
 	}elsif((GetSamFlagRead($s) & 128)){
-		
 		return 2;
 	}else{
 		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);	
@@ -593,7 +640,7 @@ sub GetSam {
 	my $sam; 
 	@{$sam}=(GetH2($r),		#0
 		GetFlagRead($r),	#1
-		GetChrRead($r),		#2
+		GetChromRead($r),	#2
 		GetPosRead($r),		#3
 		GetMapqRead($r),	#4
 		GetCigarRead($r),	#5
@@ -644,6 +691,7 @@ sub GetChromRead{
 	}
 	#
 	defined($ret) or die "Invalid record at line ". $. .": ".Dumper($r);
+	#$ret="*" if($re)
 	return($ret);
 	#return($r -> [20]);# or die 'Record does not contain this many fields!'.Dumper($r);	
 }
@@ -737,7 +785,7 @@ sub GetSeqRead{
 		$ret = $r -> [28];# or die 'Record does not contain this many fields!';
 	}
 	#
-	die $ret.Dumper($r)."$." if(!(defined($ret) && ($ret =~ /^[ATCGNatcgn]*$/)));
+	die $ret.Dumper($r)."$." if(!(defined($ret) && ($ret =~ /^[\*ATCGNatcgn]*$/)));
 	return($ret);
 	
 	#return($r -> [28]);# or die 'Record does not contain this many fields!'.Dumper($r);	
@@ -973,10 +1021,9 @@ sub TrimReadsByProbe{
 		$overlapR1 = GetR1Overlap($r1,GetNameProbe($r2));
 		
 		#warn $overlapR1.Dumper($r1).GetNameProbe($r2);
+	}else{
+		$overlapR1 = GetR1Overlap($r1);
 	}
-	#else{
-	#	$overlapR1 = GetR1Overlap($r1);
-	#}
 	
 	
 	if(IsPrimaryAlignment($r1)> 0){#does this work??
@@ -1143,7 +1190,7 @@ sub CigarParsedAsString {
 }
 sub GetSamCigarRead {
 	my $s= shift(@_);
-	#die $s -> [5];
+	confess " #############3here" if($s == 75);
 	return $s -> [5];
 }
 sub GetSamFlagRead {
@@ -1300,15 +1347,18 @@ sub GetR2Overlap{
 		&& GetStrandRead($r) ne '.'
 		&& GetStrandProbe($r) ne '.'){
 		
-		#somethimes this is too complex to find a good solution as is. Because the cigar also effects the start and end points. And 
+		#somethimes this is too complex to find a good solution as is. Because the cigar also effects the start and end points. 
+		#This also limits chages the bahavior when calling something overlap or not...
 		#die "fix overlap"
+		
 		if(GetStrandRead($r) eq '+' &&
-			(GetStartRead($r) - $wiggleR2  <= GetStartProbe($r) || 
-			GetStartRead($r) + $wiggleR2  >= GetStartProbe($r)) &&
-			GetEndRead($r) >= GetStartProbe($r) ){
+			(GetEndRead($r) >= GetStartProbe($r)) && 
+				(GetStartRead($r) + $wiggleR2  >= GetStartProbe($r) || 
+				 GetStartRead($r) - $wiggleR2  <= GetStartProbe($r) ||
+				 GetStartRead($r) <= GetEndProbe($r)
+			)){
 			
-			
-			
+			#should be like this for selecting:			
 			#--->--read-->
 			#--- >probe>
 			
@@ -1317,7 +1367,9 @@ sub GetR2Overlap{
 		}elsif(GetStrandRead($r) eq '-' &&
 			GetStartRead($r) <= GetEndProbe($r) && 
 			(GetEndRead($r) + $wiggleR2  >= GetEndProbe($r) || 
-			GetEndRead($r) - $wiggleR2  <= GetEndProbe($r))){
+			 GetEndRead($r) - $wiggleR2  <= GetEndProbe($r) ||
+			 GetEndRead($r) >= GetStartProbe($r)
+			)){
 				
 			#---<read<---
 			#--<probe<---

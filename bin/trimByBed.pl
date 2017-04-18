@@ -49,7 +49,7 @@ sub wrapper {
 		unlink($opts -> {'t'}.".samfifo");
 	}
 	#good luck at debug
-	my $cmd="set -x;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
+	my $cmd="set -x;set -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
@@ -77,7 +77,7 @@ use: $0 [-s SAMALIGNMENT| -r BWAINDEXBASE -i INFASTQGZ] -b TRIMBED -o OUTPREFIX
 	SAMALIGNMENT	Alignment in SAM Format. Specifying this option skips the BWA alignment step and the need for a BWA index / program.
 notes
 Requires bwa, bedtools, samtools and a unix environment. Takes a Fastq file and trims it based on alignment position respective to specified intervals.
-Due to no validity checking also check that these are for the same reference file!
+Due to no validity checking also make sure that these are for the same reference file!
 
 END
 	return $use;
