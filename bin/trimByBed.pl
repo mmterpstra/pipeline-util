@@ -9,7 +9,8 @@ main();
 sub main {
 	my $opts;
 	warn "[INFO] cmdline:".join(' ',($0,@ARGV))."\n";
-	getopts('r:b:i:o:s:', \%{$opts});
+	#-n NEWSAM
+	getopts('r:b:i:o:s:n:', \%{$opts});
 	#warn Dumper($opts);
 	if(not( defined($opts -> {'b'}) && -e $opts -> {'b'} && defined($opts -> {'o'}) && 
 	 ((defined($opts -> {'r'}) && defined($opts -> {'i'}) && -e $opts -> {'i'} ) ||  (defined($opts-> {'s'}) && -e $opts -> {'s'} )) )){
@@ -48,12 +49,12 @@ sub wrapper {
 		unlink($opts -> {'t'}.".samfifo");
 	}
 	#good luck at debug
-	my $cmd="set -x;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
+	my $cmd="set -x;set -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
 	"paste - ".$opts -> {'t'}.".samfifo |".
-	"perl ".$opts -> {'bin'}."tickertape.pl -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz&".
+	"perl ".$opts -> {'bin'}."tickertape.pl -h ".$opts -> {'t'} . ".tmp.sam -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." &".
 	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
 	warn "[INFO] system call:". $cmd."\n";
@@ -76,7 +77,7 @@ use: $0 [-s SAMALIGNMENT| -r BWAINDEXBASE -i INFASTQGZ] -b TRIMBED -o OUTPREFIX
 	SAMALIGNMENT	Alignment in SAM Format. Specifying this option skips the BWA alignment step and the need for a BWA index / program.
 notes
 Requires bwa, bedtools, samtools and a unix environment. Takes a Fastq file and trims it based on alignment position respective to specified intervals.
-Due to no validity checking also check that these are for the same reference file!
+Due to no validity checking also make sure that these are for the same reference file!
 
 END
 	return $use;
