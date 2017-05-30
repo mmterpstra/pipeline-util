@@ -98,7 +98,7 @@ sub main{
 
 			if(my $fq = TrimReadByProbe($record)){
 				my $sam = TrimSamReadByProbe($record);
-				print {$samOutHandle} SamAsString($sam);
+				#print {$samOutHandle} SamAsString($sam);
 				#inpect record
 				#warn $0.Dumper($fq,$record).$. if(GetNameRead($record) =~  m/820/);
 				if(GetFqLength($fq) >= 10){
