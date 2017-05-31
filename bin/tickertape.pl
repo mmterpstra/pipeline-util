@@ -10,15 +10,20 @@ use Getopt::Long;
 #      my $verbose;
 
 my $opts;
+
+#defaults
 %{$opts} = ('U'	=> './trimmedFq.fq.gz',
 			'R1'=> './trimmedFq_1.fq.gz',
-			'R2'=> './trimmedFq_2.fq.gz');
+			'R2'=> './trimmedFq_2.fq.gz',
+			'l' => '500000');
+
 
 GetOptions ("read1|r1|1=s"   => \$opts -> {'R1'},      # string
 	"read2|r2|2=s"   => \$opts -> {'R2'},
 	"unpaired|un|U=s"   => \$opts -> {'U'},
 	"samout|s=s"	=> \$opts -> {'s'},
 	"samheader|h=s"  => \$opts -> {'h'},
+	"samheaderlinelimit|l" => \$opts -> {'l'},
 	) or die("Error in command line arguments\n");
 
 my $probemetrics;
@@ -72,7 +77,7 @@ sub main{
 			$_ = <>;
 			my $r2 = DumbReader($_) or confess "Cannot read paired data although pe flags set";
 			Validate($r2);
-                        warn $0.Dumper($r1,$r2).$. if(GetNameRead($r1) =~  m/820/);
+                        #warn $0.Dumper($r1,$r2).$. if(GetNameRead($r1) =~  m/820/);
 
 			if(my $fqs = TrimReadsByProbe($r1,$r2)){
 				my @sams = TrimSamReadsByProbe($r1,$r2);
@@ -206,7 +211,7 @@ sub GetProbePeMetrics{
 
 sub PrependHeader {
 	my ($samfile, $headersamfile) = @_;
-	my $cmd = "grep -P  \"^\@\"  " . $headersamfile. " > ". $samfile;
+	my $cmd = "head -n '.$opts -> {'l'} .' $headersamfile | grep  \"^\@\"  > ". $samfile;
 	warn $cmd;
 	system($cmd);
 }
@@ -256,8 +261,8 @@ sub GetProbeSeMetrics{
 		open($metrics -> {'probesamfiles'} -> {$probename} -> {'handle'},'>>',$metrics -> {'probesamfiles'} -> {$probename} -> {'file'});
 	}
 	print {$metrics -> {'probesamfiles'} -> {$probename} -> {'handle'}} SamAsString($sam);
-	die 'metrics '. Dumper($probename,$sam,$metrics)." " if($probename ne "." && $. > 200);
-	warn 'metrics '. Dumper($metrics)." " if($probename ne "." && $. > 100);
+	#die 'metrics '. Dumper($probename,$sam,$metrics)." " if($probename ne "." && $. > 200);
+	#warn 'metrics '. Dumper($metrics)." " if($probename ne "." && $. > 100);
 	return $metrics;
 }
 sub EstimateFragmentSizeSE{
