@@ -19,7 +19,7 @@ perl scripts require the following libraries:
 
 ----
 
-## Script Descriptions
+## Script descriptions
 
 What more can I say. Read the descriptions. Also the usemessages from the scripts should be helpful.
 
@@ -38,11 +38,12 @@ What more can I say. Read the descriptions. Also the usemessages from the script
 #### GTfGet1000bpExonsBeforeTES.pl
 
 - GTF extraction tool: extracts the 1000 bp in exon space from the genes/transcripts and dumps them to a file: this is 
-made especially for 3 prime mrna-seq and derived protocols
+made especially for 3 prime mrna-seq (lexogen) and derived protocols
 
 #### PlotFloatsOnInterVals.pl
 
-- A beast of legency code used for production: Does some reformatting on Varscan2 output files to perform a basic aCGH  like analysis within R using the package 'DNAcopy', making nice plots and making a SEG file for downstream analysis
+- A beast of legency code used for production: Does some reformatting on Varscan2 output files to perform a basic aCGH 
+ like analysis within R using the package 'DNAcopy', making nice plots and making a SEG file for downstream analysis
 
 #### tickerRefine.pl
 
@@ -50,9 +51,12 @@ made especially for 3 prime mrna-seq and derived protocols
 
 #### trimByBed.pl
 
-- Trims sequences based on mapping location and specified bed files. Neatly trims off 'landing probes' used in the 
-Nugene protocol. Wrapper script using 'tickerRefine.pl' and 'tickertape.pl' they need to be in the same folder for it to work, also 'bwa mem' , samtools and bedtools should be available in path
-- Now has an experimental option to specify samfile instead of letting 'bwa mem' doing the dirty work, not everything ending with '.sam' should work though, also see version/commit messages on tested aligners.
+- Trims sequences based on mapping location and specified bed files. Neatly trims off 'landing probes' used in the SPET
+(Nugene) protocol. Wrapper script using 'tickerRefine.pl' and 'tickertape.pl' they need to be in the same folder for it
+ to work, also 'bwa mem' , samtools and bedtools should be available in path 
+
+ - Now has an experimental option to specify samfile instead of letting 'bwa mem' doing the dirty work, not everything
+ ending with '.sam' should work though, also see version/commit messages on tested aligners.
 
 #### AddAlleleFrequenciesToSeg.pl
 
@@ -77,5 +81,8 @@ Nugene protocol. Wrapper script using 'tickerRefine.pl' and 'tickertape.pl' they
 #### VcfaddAdBasedZScores.pl
 
 - Adds Z scores based on the AD annotation fields, needs cleanup. 
+
+#### filterCombinedVariantsForGatk.pl 
+ - This filters after CombineVariants giving prio to GATK if two records are found on the same position
 
 -----
