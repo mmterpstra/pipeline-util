@@ -420,7 +420,7 @@ sub formatPrinter {
 	while($count < $formatData{'sampleCount'}){
 		my $perSampleTekst="";
 
-		if($formatData{ $formatData{'sampleNames'}{$count} }{'GT'} && $formatData{ $formatData{'sampleNames'}{$count} }{'GT'} ne './.'){
+		if($formatData{ $formatData{'sampleNames'}{$count} }{'GT'} && $formatData{ $formatData{'sampleNames'}{$count} }{'GT'} ne './.' && $formatData{ $formatData{'sampleNames'}{$count} }{'GT'} ne '.'){
 			$formatText = "";#or else nonsensical format tekst
 			for my $tmp (@usedFormatOrder){
 				warn "tmp:".$tmp if(not(defined($tmp)));
