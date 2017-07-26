@@ -67,7 +67,7 @@ sub main{
 		open($samOutHandle,'|-',$cmd) or die "Cannot write '$cmd'";
 		PrependHeaderHandle($samOutHandle,$opts -> {'h'});
 	}
-
+	
 	#
 	while(<>){
 		$record = DumbReader($_);
@@ -543,12 +543,50 @@ sub TrimSam{
 		#warn "temp SamRecord". Dumper($sam,$cigar, [$hardclip , $trim])." " if($cigarOld =~ m/S/);
 		#die Dumper($ref,\$trim);
 	}
+	#rarely could occur at end of alignment by deletion after splice N/D operator at end of alignment
+	
+	my $clean = 0;
+	if($process_reverse == 1){
+                #create [hardclip],[cigarNew],[cigar]
+                push(@{$cigarNew},@{$cigar});
+                #unshift(@{$cigarNew},{'H' => $hardclip});
+        }else{
+              	#create [cigar],[cigarNew],[hardclip]
+                unshift(@{$cigarNew},@{$cigar});
+                #push(@{$cigarNew},{'H' => $hardclip});
+        }
+
+	warn "cleanup";
+	while(not($clean) && scalar(@{$cigarNew}) > 0){
+		my ($operation,$amount);
+		if($process_reverse == 1){
+			($operation,$amount) = %{$cigarNew -> [0]};
+		}else{
+			($operation,$amount) = %{$cigarNew -> [-1]};
+		}
+		#confess Dumper(\$operation,\$amount)." " ;
+		#warn "[DEBUG] Trimming [DN] from cigar end before trim: cigar".Dumper($cigarNew)."sam:" .Dumper($sam)."op/am" .Dumper(\$operation,\$amount)."  " if(GetSamNameRead($sam) =~ m/^M01785:48:000000000-B9KTB:1:2113:22269:5170/);
+		if(defined($operation) && defined($amount) && ($operation =~ /^[DN]$/ || $amount == 0)){
+			#warn "[DEBUG] Trimming [DN] from cigar end before trim: ".Dumper($cigarNew).Dumper($sam)."  " ;
+			if($process_reverse == 1){
+				my $ref = shift(@{$cigarNew});
+			}else{
+                      		my $ref = pop(@{$cigarNew});
+			}
+			#warn "[INFO] Trimming [DN] from cigar end after trim: ".Dumper($cigarNew).Dumper($sam)."  " ;
+		}else{
+			$clean++;
+		}
+	}
+	
 	#merge the rest of the cigar
 	if($process_reverse == 1){
-		push(@{$cigarNew},@{$cigar});
+		#create [hardclip],[cigarNew],[cigar]
+		#push(@{$cigarNew},@{$cigar});
 		unshift(@{$cigarNew},{'H' => $hardclip});
 	}else{
-		unshift(@{$cigarNew},@{$cigar});
+                #create [cigar],[cigarNew],[hardclip]
+		#unshift(@{$cigarNew},@{$cigar});
 		push(@{$cigarNew},{'H' => $hardclip});
 	}
 
@@ -662,6 +700,7 @@ sub GetSam {
 sub GetH2{
 	my $record = shift(@_);
 	#warn $record -> [19];
+	#if the program complains about being a string not int then entire record might not de correctly in input maybe because incorrect records (Paired flags set but no complete pairs)
 	if($record -> [0] eq "." || $record -> [1] == -1){
 		return($record -> [20]);# or die 'Record does not contain this many fields!';
 	}else{
@@ -1192,6 +1231,11 @@ sub CigarParsedAsString {
 		}
 	}
 	return $string;
+}
+sub GetSamNameRead {
+	my $s= shift(@_);
+	#die $s -> [0];
+	return $s -> [0];
 }
 sub GetSamCigarRead {
 	my $s= shift(@_);
