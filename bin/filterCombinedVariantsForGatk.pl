@@ -6,6 +6,7 @@ my $last4;
 my $_last;
 while(<>){
 	my @F = split("\t",$_);
+	#if pos are equal to last then remove one of the pos keeping/preferring the set from GATK toolkit
 	if(defined($F[1]) && $F[1] eq $last ){
 		if($_ =~ m/set=GATK/){
 			$_last =$_;
