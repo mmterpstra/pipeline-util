@@ -48,11 +48,11 @@ sub main{
 		CalleriseRecordFormatData('record' => $x,'caller' => $caller);
 		#die Dumper $x;
 		print {$out} $vcf->format_line($x);
-		die Dumper $x;
+		#die Dumper $x;
 		$records++;
-#               if(scalar(@{GetAlt($x)})>1){
-#				die Dumper($x)."\n".GetAlt($x)."\n".$. ;
-#		}
+#               #if(scalar(@{GetAlt($x)})>1){
+#		#		die Dumper($x)."\n".GetAlt($x)."\n".$. ;
+#		#}
 
 	}
 	$vcf->close();
@@ -109,7 +109,7 @@ sub CalleriseRecordFormatData {
 	
 	for my $sample (keys(%{$record -> {'gtypes'}})){
 		for my $field (keys(%{$record -> {'gtypes'} -> {$sample}})){
-			$record -> {'gtypes'} -> {$sample} -> {$field} = './.' if($record -> {'gtypes'} -> {$sample} -> {$field} eq '.');
+			$record -> {'gtypes'} -> {$sample} -> {$field} = './.' if($field eq "GT" && $record -> {'gtypes'} -> {$sample} -> {$field} eq '.');
 			next if($field eq 'GT' && ($record -> {'gtypes'} -> {$sample} -> {$field} eq './.'));
 			$record -> {'gtypes'} -> {$sample} -> {$caller.$field} = $record -> {'gtypes'} -> {$sample} -> {$field};
 		}
