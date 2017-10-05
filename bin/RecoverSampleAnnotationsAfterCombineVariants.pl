@@ -342,16 +342,18 @@ sub AnnotateSampleInfo {
 				if($alteq == 1){
 					$annotated = 1;
 					for my $sample (keys(%{$record -> {'gtypes'}})){
-						for my $field (keys(%{$x -> {'gtypes'} -> {$sample}})){
-							if($field eq 'GT' && 
-								($record -> {'gtypes'} -> {$sample} -> {$field} eq '.' ||
-								 $record -> {'gtypes'} -> {$sample} -> {$field} eq './.') ){
-								$record -> {'gtypes'} -> {$sample} -> {$field} = $x -> {'gtypes'} -> {$sample} -> {$field};
-							}
-							if( not( defined($record -> {'gtypes'} -> {$sample} -> {$field})) ){
-								$record -> {'gtypes'} -> {$sample} -> {$field} = $x -> {'gtypes'} -> {$sample} -> {$field};
-							}
-			                	}
+						if(defined($x -> {'gtypes'} -> {$sample})){
+							for my $field (keys(%{$x -> {'gtypes'} -> {$sample}})){
+								if($field eq 'GT' && 
+									($record -> {'gtypes'} -> {$sample} -> {$field} eq '.' ||
+									 $record -> {'gtypes'} -> {$sample} -> {$field} eq './.') ){
+									$record -> {'gtypes'} -> {$sample} -> {$field} = $x -> {'gtypes'} -> {$sample} -> {$field};
+								}
+								if( not( defined($record -> {'gtypes'} -> {$sample} -> {$field})) || $record -> {'gtypes'} -> {$sample} -> {$field} eq '.' ){
+									$record -> {'gtypes'} -> {$sample} -> {$field} = $x -> {'gtypes'} -> {$sample} -> {$field};
+								}
+			                		}
+						}
 					}
 					#die "Should work".Dumper($record);
 					#
@@ -359,6 +361,7 @@ sub AnnotateSampleInfo {
 			}
 		}
 	}
+	#classify as complex or not
 	if(not($annotated == 1)){
 		return 0;
 	}

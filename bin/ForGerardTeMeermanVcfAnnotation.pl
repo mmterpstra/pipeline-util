@@ -417,6 +417,8 @@ sub formatPrinter {
 	}
 	##endof GATK stringency
 	my $count = 0;
+	my %formatIdxes;
+	
 	while($count < $formatData{'sampleCount'}){
 		my $perSampleTekst="";
 
@@ -426,31 +428,48 @@ sub formatPrinter {
 				warn "tmp:".$tmp if(not(defined($tmp)));
 				#warn "formatData $tmp is missing sample:".$formatData{'sampleNames'}{$count}  if(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp})));
 				if(defined( $formatData{ $formatData{'sampleNames'}{$count} }{$tmp} ) && $formatData{ $formatData{'sampleNames'}{$count} }{$tmp} eq 'true' && $formatText eq ""){
+					$formatIdxes{$tmp}++;
 					$formatText = $tmp;
 					$perSampleTekst = $tmp;
 				}elsif(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp})) && $formatText eq ""){
+					$formatIdxes{$tmp}++;
 					$formatText = $tmp;
 					$perSampleTekst = '.';
 				}elsif(not(defined($formatData{ $formatData{'sampleNames'}{$count} }{$tmp}))){
+					$formatIdxes{$tmp}++;
 					$formatText = $formatText.':'.$tmp;
 					$perSampleTekst = $perSampleTekst.':'.$tmp;
 				}elsif($formatData{ $formatData{'sampleNames'}{$count} }{$tmp} eq 'true'){
+					$formatIdxes{$tmp}++;
 					$formatText = $formatText.':'.$tmp;
 					$perSampleTekst = $perSampleTekst.':'.$tmp;
 				}elsif($formatData{ $formatData{'sampleNames'}{$count} }{$tmp} ne 'true' && $formatText eq ""){
+					$formatIdxes{$tmp}++;
 					$formatText = $tmp;
 					$perSampleTekst = $formatData{ $formatData{'sampleNames'}{$count} }{$tmp};
 				}elsif($formatData{ $formatData{'sampleNames'}{$count} }{$tmp} ne 'true'){
+					$formatIdxes{$tmp}++;
 					$formatText = $formatText.':'.$tmp;
 					$perSampleTekst = $perSampleTekst.':'.$formatData{ $formatData{'sampleNames'}{$count} }{$tmp};
 				}
 			}
 		}else{
 			$perSampleTekst='./.';
+			$formatIdxes{'GT'}++;
 		}
 		push(@sampletext,$perSampleTekst);
 		$count++;
 	}
+	
+	$formatText = "";
+	my @usedFormatOrderMin;
+	for my $field (@usedFormatOrder){
+		if(defined($formatIdxes{$field})&& $formatIdxes{$field}){
+			push(@usedFormatOrderMin, $field);
+		}
+	}
+	$formatText = join(":", @usedFormatOrderMin);
+
 	
 	return ($formatText, join("\t",@sampletext));
 }
