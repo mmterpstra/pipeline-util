@@ -85,4 +85,12 @@ made especially for 3 prime mrna-seq (lexogen) and derived protocols
 #### filterCombinedVariantsForGatk.pl 
  - This filters after CombineVariants giving prio to GATK if two records are found on the same position
 
+#### RecoverSampleAnnotationsAfterCombineVariants.pl
+ - Tries to annotate sample level annotations from other vcfs with the same samples. Used after CombineVariants to get a more exhaustive vcf so that the multiple alt could be annotated.
+ - pseudo workflow (code does not work for briefness): 
+    - gatkCombinevariants gatkHCcaller.vcf Freebayes.vcf -o combined.vcf
+    - RecoverSampleAnnotationsAfterCombineVariants complex.out.vcf combined.vcf gatkHCcaller.vcf Freebayes.vcf > merge.no_complex_anno.vcf
+    - gatkHCcaller --genotype_given_alles --alles complex.out.vcf -o regeno.vcf
+    - RecoverSampleAnnotationsAfterCombineVariants reallycomplex.out.vcf merge.no_complex_anno.vcf regeno.vcf merge.final.vcf
+
 -----
