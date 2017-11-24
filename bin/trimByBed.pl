@@ -49,7 +49,7 @@ sub wrapper {
 		unlink($opts -> {'t'}.".samfifo");
 	}
 	#good luck at debug
-	my $cmd="set -x;set -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
+	my $cmd="set -x -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
@@ -57,9 +57,8 @@ sub wrapper {
 	"perl ".$opts -> {'bin'}."tickertape.pl -h ".$opts -> {'t'} . ".tmp.sam -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." &".
 	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
-	warn "[INFO] system call:". $cmd."\n";
 	my $ret;
-	@{$ret} = `($cmd )2>&1`;
+	@{$ret} = CmdRunner($cmd);
 	
 	warn "[INFO] system call results:\n";
 	for (@{$ret}){
@@ -67,6 +66,27 @@ sub wrapper {
 		print STDERR $_;
 	}
 }
+sub CmdRunner {
+        my $ret;
+        my $cmd = join(" ",@_);
+
+        warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
+
+        @{$ret} = `($cmd )2>&1`;
+        if ($? == -1) {
+                die localtime( time() ). " [ERROR] failed to execute: $!\n";
+        }elsif ($? & 127) {
+                die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+                 ($? & 127),  ($? & 128) ? 'with' : 'without';
+        }elsif ($? != 0) {
+                die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+                 ($? & 127),  ($? & 128) ? 'with' : 'without';
+        }else {
+               	warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+        }
+	return @{$ret};
+}
+
 sub usemsg {
 	my $use =<<"END";
 use: $0 [-s SAMALIGNMENT| -r BWAINDEXBASE -i INFASTQGZ] -b TRIMBED -o OUTPREFIX

@@ -211,9 +211,9 @@ sub GetProbePeMetrics{
 
 sub PrependHeader {
 	my ($samfile, $headersamfile) = @_;
-	my $cmd = "head -n '.$opts -> {'l'} .' $headersamfile | grep  \"^\@\"  > ". $samfile;
+	my $cmd = "set -e -o pipefail && head -n '.$opts -> {'l'} .' $headersamfile | grep  \"^\@\"  > ". $samfile;
 	warn $cmd;
-	system($cmd);
+	warn CmdRunner($cmd);
 }
 sub PrependHeaderHandle {
 	my ($samout, $headersamfile) = @_;
@@ -1441,4 +1441,25 @@ sub GetReadPairEnd {
 	my $readend;
 	(undef,$readend) = split('/',GetNameRead($r));
 	return($readend);
+}
+
+sub CmdRunner {
+	my $ret;
+	my $cmd = join(" ",@_);
+	
+	warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
+	
+	@{$ret} = `($cmd )2>&1`;
+	if ($? == -1) {
+		die localtime( time() ). " [ERROR] failed to execute: $!\n";
+	}elsif ($? & 127) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+		 ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}elsif ($? != 0) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+	         ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}else {
+		warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+	}
+	return @{$ret};
 }

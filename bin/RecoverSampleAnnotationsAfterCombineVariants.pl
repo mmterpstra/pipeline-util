@@ -282,8 +282,8 @@ sub CreateTabixIndexedVcf {
 	die "Wrong extension (not .vcf.gz) for outvcf $outvcf " if(not($outvcf =~ m/\.vcf\.gz$/));
 	
 	my $indexcmd = "set -x && bgzip -c $invcf > $outvcf && tabix -p vcf $outvcf";
-	my $ret = `$indexcmd`;
-        $? == 0 or die "system cmd `$indexcmd` failed: $ret\n exit code: $?";
+	my $ret = CmdRunner($indexcmd);
+        #$? == 0 or die "system cmd `$indexcmd` failed: $ret\n exit code: $?";
 	
 
 }
@@ -366,4 +366,24 @@ sub AnnotateSampleInfo {
 		return 0;
 	}
 	return 1;
+}
+sub CmdRunner {
+	my $ret;
+	my $cmd = join(" ",@_);
+	
+	warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
+	
+	@{$ret} = `($cmd )2>&1`;
+	if ($? == -1) {
+		die localtime( time() ). " [ERROR] failed to execute: $!\n";
+	}elsif ($? & 127) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+		 ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}elsif ($? != 0) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+	         ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}else {
+		warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+	}
+	return join('',@{$ret});
 }

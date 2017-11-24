@@ -23,7 +23,7 @@ sub main {
 		my $seg=SegNew('file'=>$segFile);
 		my $bedFile=$segFile;
 		
-		if(not($bedFile=~s/\.seg$/\.bed/){
+		if(not($bedFile=~s/\.seg$/\.bed/)){
 			$bedFile.=".bed";
 		}
 		
@@ -74,7 +74,7 @@ sub PlotSegData {
 			my $src = GetSourceDir();
 			my $cmd = "Rscript $src/PlotSegsSampleVsSample.R $mergedData $sample1 $sample2 2>/dev/null";
 			warn "## ".localtime(time())." [INFO] running command for plotting '$cmd'\n";
-			system($cmd);
+			warn CmdRunner($cmd);
 		}
 	}
 }
@@ -120,7 +120,7 @@ sub MultiInter {
 	my $dataMultiInter;
 	
 	for my $bed (@{$bedFiles}){
-		my $cmd = 'bedtools multiinter -i '.join(" ", @{$bedFiles}).'|cut -f1,2,3 |bedtools intersect -wao -a - -b '.$bed;
+		my $cmd = 'set -e -o pipefail && bedtools multiinter -i '.join(" ", @{$bedFiles}).'|cut -f1,2,3 |bedtools intersect -wao -a - -b '.$bed;
 	
 		warn localtime(time())." [INFO] running bedtools for bed annotation as '$cmd'\n";
 		open(my $multannothandle,'-|',$cmd);
@@ -346,3 +346,23 @@ sub SegDataHashAsBedString{
 	return $bedString;
 }
 
+sub CmdRunner {
+	my $ret;
+	my $cmd = join(" ",@_);
+	
+	warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
+	
+	@{$ret} = `($cmd )2>&1`;
+	if ($? == -1) {
+		die localtime( time() ). " [ERROR] failed to execute: $!\n";
+	}elsif ($? & 127) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+		 ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}elsif ($? != 0) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+	         ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}else {
+		warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+	}
+	return @{$ret};
+}

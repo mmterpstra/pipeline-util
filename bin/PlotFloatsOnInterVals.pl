@@ -229,7 +229,8 @@ END
 	print $out $rscript;
 	close $out;
 	my $cmd = "$RscriptBin ${dirname}${shortname}.rscript";
-	warn "\nRunning DNAcopy '$cmd'\n".`$cmd`;
+	warn "\nRunning DNAcopy '$cmd'\n".CmdRunner($cmd);
+	
 #	$shortname.seg;
 	open( my $SegHandle, '<', "${dirname}${shortname}.seg" )
 	  or die "cannot read DNAcopy.seg file '${dirname}$shortname.seg' ";
@@ -319,7 +320,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`$RscriptBin $dataTable.Rscript`;
+	my $ret=CmdRunner("$RscriptBin $dataTable.Rscript");
 	warn $ret;
 
 }
@@ -399,7 +400,7 @@ END
 	my $Rcmd="$RscriptBin $dataTable.Rscript";
 	warn $Rcmd;
 	
-	my $ret=`$Rcmd`;
+	my $ret=CmdRunner($Rcmd);
 	warn $ret;
 
 }
@@ -512,7 +513,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`Rscript $dataTable.Rscript`;
+	my $ret=CmdRunner(Rscript $dataTable.Rscript);
 	warn $ret;
 
 }
@@ -622,7 +623,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`$RscriptBin $dataTable.Rscript`;
+	my $ret=CmdRunner("$RscriptBin $dataTable.Rscript");
 	warn $ret;
 
 }
@@ -723,7 +724,7 @@ END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
 	warn "rscript:".$dataTable.".Rscript";
-	my $ret=`$RscriptBin $dataTable.Rscript`;
+	my $ret=CmdRunner("$RscriptBin $dataTable.Rscript");
 	warn $ret;
 
 }
@@ -811,7 +812,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=`$RscriptBin $dataTable.Rscript`;
+	my $ret=CmdRunner("$RscriptBin $dataTable.Rscript");
 	warn $ret;
 
 }
@@ -909,4 +910,25 @@ sub dirname {
 	#}
 	#warn "dirname:$dir";
 	return $dir;
+}
+
+sub CmdRunner {
+	my $ret;
+	my $cmd = join(" ",@_);
+	
+	warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
+	
+	@{$ret} = `($cmd )2>&1`;
+	if ($? == -1) {
+		die localtime( time() ). " [ERROR] failed to execute: $!\n";
+	}elsif ($? & 127) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+		 ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}elsif ($? != 0) {
+		die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+	         ($? & 127),  ($? & 128) ? 'with' : 'without';
+	}else {
+		warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+	}
+	return join('',@{$ret});
 }
