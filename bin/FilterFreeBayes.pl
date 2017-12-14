@@ -5,8 +5,10 @@ use Vcf;
 use Data::Dumper;
 
 my $use = <<"END";
-	$0 ratio in.vcf out.vcf
-		Filters for basic false positives like only depth of only 2/1 and configurable ratio
+	use $0 ratio in.vcf out.vcf
+		Filters for variants only having an maximum alternate depth <3 in one of the samples and configurable ratio in one of the samples.
+	Recommended usage:
+		$0 0.1 freebayes.vcf > out.vcf
 END
 
 my $ratio = shift @ARGV or die " No ratio option supplied. $use";
