@@ -112,6 +112,7 @@ sub InfoFieldsToGenotypeFieldsInRecord {
 	#die Dumper($self -> {'record'})." ";
 }
 sub SelfRequire {
+	#calls like SelfRequire(%{$self}, 'req'=> ['vcf', 'fields']);
 	my $self;
         %{$self}= @_;
 	#die Dumper($self)." ";
