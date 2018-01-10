@@ -176,13 +176,35 @@ sub TrimSamReadsByProbe{
 			#die "TrimAfter\t".Dumper($overlapR2,$sam2,$overlapR1,$sam1)." " if( $overlapR2 > 10);
 		}
 		my $pn = ".";
-		$pn = GetNameProbe($r2) if($overlapR2);
+	
+		#old metrics
+		if($overlapR2 && $overlapR2 > 0){
+			$pn = GetNameProbe($r2);
+		}elsif($overlapR1 && $overlapR1 > 0){
+			$pn = GetNameProbe($r1);
+		}
 		$probemetrics = GetProbePeMetrics($probemetrics,$pn,$sam1,$sam2);
 		#cluck "TrimReadsByProbe result:".Dumper($fqs);
+		
+		#new metrics after markdups
+		$sam1 = SetSamLandingProbename($sam1,$pn);
+		$sam2 = SetSamLandingProbename($sam2,$pn);
+
+
 		return ($sam1,$sam2);
 	}else{
 		return undef;
 	}
+}
+sub SetSamLandingProbename {
+	my $sam = shift @_;
+	my $probename = shift @_;
+	if(defined($probename) && $probename ne ""){
+		push(@{$sam},"NU:Z:$probename");
+	}else{
+		warn "Error no valid landing probe name!!!";
+	}
+	return $sam;
 }
 sub GetProbePeMetrics{
 	my ($metrics,$probename,$sam1,$sam2)=@_;
@@ -351,6 +373,8 @@ sub TrimSamReadByProbe {
 		my $pn = ".";
 		$pn = GetNameProbe($r) if($overlap);
 		$probemetrics = GetProbeSeMetrics($probemetrics,$pn,$sam);
+		
+		$sam = SetSamLandingProbename($sam,$pn);
 		return $sam;
 	}else{
 		
