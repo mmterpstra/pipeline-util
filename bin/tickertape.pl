@@ -48,6 +48,7 @@ sub main{
 	my $record;
 	my $fqouthandles;
 	my $samOutHandle;
+	#these could be cleaner...
 	if($opts -> {'R2'} && $opts -> {'R1'}){
 		my $cmd = "gzip -c > ".$opts -> {'R1'};
 		open($fqouthandles -> [1],'|-',$cmd) or die "Cannot write '$cmd'";
@@ -63,7 +64,7 @@ sub main{
 
 	if($opts -> {'s'} && defined($opts -> {'h'}) && -e $opts -> {'h'}){
 				
-		my $cmd = "bash -c 'samtools sort -T ".$opts -> {'s'}.".sorttmp - | tee >(samtools index - ".$opts -> {'s'}.".bai ) > ".$opts -> {'s'}.".bam'"; warn $cmd;
+		my $cmd = "bash -c 'set -e -o pipefail && samtools sort -T ".$opts -> {'s'}.".sorttmp - | tee >(samtools index - ".$opts -> {'s'}.".bai ) > ".$opts -> {'s'}.".bam'"; warn $cmd;
 		open($samOutHandle,'|-',$cmd) or die "Cannot write '$cmd'";
 		PrependHeaderHandle($samOutHandle,$opts -> {'h'});
 	}
@@ -120,11 +121,17 @@ sub main{
 		#die Dumper($record) if($. > 100);
 	}
 	
-	warn "## $0 ## INFO: Done with $. lines processed";
-	warn 'metrics '. Dumper($probemetrics)." ";
+	warn localtime(time())."## $0 ## INFO: Writing log to ".$opts -> {'s'}.".stats.log";
+	#warn 'metrics '. Dumper($probemetrics)." ";
 	open(my $loghandle ,'>',$opts -> {'s'}.".stats.log") or die "Cannot write logfile";
 	print {$loghandle} MetricsAsString($probemetrics);
-	close $loghandle;
+	warn localtime(time())."## $0 ## INFO: Closing handles";
+	close $loghandle or warn "Failed to close log file";
+	close $samOutHandle or warn "Failed to close bam file";
+	close $fqouthandles -> [1]  or warn "Failed to close fq1 file";
+	close $fqouthandles -> [2] or warn "Failed to close fq2 file";
+	warn localtime(time())."## $0 ## INFO: Done with $. lines processed";
+
 }
 
 #sub TrimSamReadsByProbe {
@@ -580,7 +587,7 @@ sub TrimSam{
                 #push(@{$cigarNew},{'H' => $hardclip});
         }
 
-	warn "cleanup";
+	#warn "cleanup";
 	while(not($clean) && scalar(@{$cigarNew}) > 0){
 		my ($operation,$amount);
 		if($process_reverse == 1){

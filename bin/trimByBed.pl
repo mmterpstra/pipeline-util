@@ -49,7 +49,7 @@ sub wrapper {
 		unlink($opts -> {'t'}.".samfifo");
 	}
 	#good luck at debug
-	my $cmd="set -x -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo;".
+	my $cmd="set -x -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo && ".
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
@@ -64,6 +64,10 @@ sub wrapper {
 	for (@{$ret}){
 		$_ =~ s!^!   !g;
 		print STDERR $_;
+	}
+	
+	if( -e  $opts -> {'t'} . ".tmp.sam " || -e $opts -> {'t'} . ".samfifo"){
+		Die "something strange happend the ". $opts -> {'t'} . ".tmp.sam or the " .$opts -> {'t'} . ".samfifo" is still present" 
 	}
 }
 sub CmdRunner {
