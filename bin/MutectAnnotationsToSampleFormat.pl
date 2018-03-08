@@ -46,13 +46,14 @@ sub main{
 	
 	#Update headers for FORMAT info and also add FT annotation and print header as vcf
 	InfoFieldsToGenotypeFieldsInHeader('vcf' => $vcf, 'fields' => $fields);
+	$vcf->add_header_line({key=>'commandline',value=>"$0".join(' ',@ARGV)});
 	print {$out} $vcf->format_header();
 	#die "header check";
 	
 	#iterate file
 	warn localtime(time())." [INFO] $0: Iterating records."; my $records=0;
 	while (my $x=$vcf->next_data_hash()){
-		InfoFieldsToGenotypeFieldsInRecord('record' => $x,'fields' => $fields, 'gt' => $gt);
+		InfoFieldsToGenotypeFieldsInRecord('record' => $x,'fields' => $fields, 'gt' => $gt, 'vcf' => $vcf);
 		#die Dumper $x;
 		print {$out} $vcf->format_line($x);
 		#die Dumper $x;
@@ -73,7 +74,7 @@ sub InfoFieldsToGenotypeFieldsInHeader {
 	#if self FT?
 	$self->{'vcf'}->add_header_line({
             'default' => '.',
-            'ID' => 'FT',
+            'ID' => 'MT2FT',
             'Description' => "Filter based on mutect filters: alt_allele_in_normal='Evidence seen in the normal sample'|clustered_events='Clustered events observed in the tumor'|clustered_read_position='Evidence for somatic variant clusters near the ends of reads'|germline_risk='Evidence indicates this site is germline, not somatic'|homologous_mapping_event='More than three events were observed in the tumor'|multi_event_alt_allele_in_normal='Multiple events observed in tumor and normal'|panel_of_normals='Seen in at least 2 samples in the panel of normals'|str_contraction='Site filtered due to contraction of short tandem repeat region'|strand_artifact='Evidence for alt allele comes from one read direction only'|t_lod_fstar='Tumor does not meet likelihood threshold'|triallelic_site='Site filtered because more than two alt alleles pass tumor LOD'|",
             'Number' => '1',
             'handler' => undef,
@@ -97,9 +98,10 @@ sub InfoFieldsToGenotypeFieldsInRecord {
 	my $self;
         %{$self}= @_;
 		
-	SelfRequire(%{$self}, 'req'=> ['record','fields','gt']);
-
-	$self -> {'record'} -> {'gtypes'} -> { $self -> {'gt'} } -> {'FT'} = join(';',@{$self -> {'record'} -> {'FILTER'}});
+	SelfRequire(%{$self}, 'req'=> ['record','fields','gt','vcf']);
+	#warn join(';',@{$self -> {'record'} -> {'FILTER'}});
+	$self -> {'vcf'}->add_format_field($self -> {'record'},'MT2FT');
+	$self -> {'record'} -> {'gtypes'} -> { $self -> {'gt'} } -> {'MT2FT'} = join(';',@{$self -> {'record'} -> {'FILTER'}});
 	
 	for my $field ( @{ $self -> {'fields'} }){
 		#mv $self -> {'record'} -> {'INFO'} -> {$field}
