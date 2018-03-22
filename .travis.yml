@@ -2,9 +2,9 @@ language: perl
 perl:
   - "5.22"
 before_install:
-- cpanm --installdeps --notest . || (tail -n 5000 /home/travis/.cpanm/work/*/build.log && exit 1)
 - sudo apt install -qq samtools
 - sudo apt install -qq bedtools
-- sudo apt install -qq libhts1
+- sudo apt install -qq libhts0
 - sudo apt install -qq r-base
-- Rscript -e 'source("https://bioconductor.org/biocLite.R");biocLite("DNAcopy")'
+- sudo Rscript -e 'source("http://bioconductor.org/biocLite.R");biocLite("DNAcopy")'
+- cpanm --installdeps --notest . || (tail -n 5000 /home/travis/.cpanm/work/*/build.log && exit 1)

@@ -10,7 +10,7 @@ $extdeps = [
 		"hint" => "wget https://cran.r-project.org/src/base/R-3/R-3.4.4.tar.gz && tar -zxf R* && cd R* && configure && make" 
 		#maybe install?
 	},{	"dep" => "htslib",
-		"test" => "htsfile --version",
+		"test" => "which tabix && which bgzip",
 		"hint" => "wget https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2 && tar -jxf htslib* && cd htslib* && make" 
 	},{	"dep" => "samtools",
 		"test" => "samtools --version",
