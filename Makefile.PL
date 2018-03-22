@@ -27,7 +27,10 @@ $extdeps = [
 	},{	"dep" => "tabix",
 		"test" => "which tabix",
 		"hint" => "sudo apt get install tabix"
-        }
+        }{	"dep" => "vcftools",
+		"test" => "vftools",
+		"hint" => "sudo apt get install vcftools"
+	}
 ];
 
 for my $dep (@{$extdeps}){
@@ -66,7 +69,7 @@ WriteMakefile(
 	"NAME"              => 'pipeline::util',
 	"VERSION_FROM"      => 'lib/pipeline/util.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
 	"PREREQ_PM"         => {
-		'Vcf' => '0.1.12b', #from vcftools
+		#'Vcf' => '0.1.12b', #from vcftools
 		'List::MoreUtils' => '0.416',
 	}, # e.g., Module::Name => 1.1
 	"BUILD_REQUIRES" => {
