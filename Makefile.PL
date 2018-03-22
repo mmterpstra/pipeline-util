@@ -28,7 +28,7 @@ $extdeps = [
 		"test" => "which tabix",
 		"hint" => "sudo apt get install tabix"
         },{	"dep" => "vcftools",
-		"test" => "vftools",
+		"test" => "vcftools",
 		"hint" => "sudo apt get install vcftools"
 	}
 ];
