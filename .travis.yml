@@ -8,7 +8,6 @@ before_install:
 - sudo apt install -qq r-base
 - sudo apt install -qq tabix
 - sudo apt install -qq vcftools
-- sudo apt install -qq vcftools
 - sudo apt install -qq bwa
 - sudo Rscript -e 'source("http://bioconductor.org/biocLite.R");biocLite("DNAcopy")'
-- cpanm --installdeps --notest . || (tail -n 5000 /home/travis/.cpanm/work/*/build.log && exit 1)
+- export PERL5LIB="/usr/share/perl5":$PERL5LIB && cpanm --installdeps --notest . || (tail -n 5000 /home/travis/.cpanm/work/*/build.log && exit 1)
