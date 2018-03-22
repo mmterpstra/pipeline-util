@@ -13,7 +13,7 @@ $extdeps = [
 		"test" => "(exit 0)",
 		"hint" => "wget https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2 && tar -jxf htslib* && cd htslib* && make" 
 	},{	"dep" => "samtools",
-		"test" => "samtools --version",
+		"test" => "which samtools",
 		"hint" => "wget https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2 && tar -jxf samtools* && cd samtools* && make"
 	},{	"dep" => "bedtools",
 		"test" => "bedtools --version",
@@ -43,18 +43,19 @@ sub CmdRunner {
         warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
 
         @{$ret} = `($cmd )2>&1`;
-        if ($? == -1) {
+	my $exitcode = $?;
+        if ($exitcode == -1) {
                 die localtime( time() ). " [ERROR] failed to execute: $!\n";
         }
-	#elsif ($? & 127) {
-        #        die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
-        #         ($? & 127),  ($? & 128) ? 'with' : 'without';
-        #}
-	elsif ($? != 0) {
+	elsif ($exitcode & 127) {
                 die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
-                 ($? & 127),  ($? & 128) ? 'with' : 'without';
+                 ($exitcode & 127),  ($exitcode & 128) ? 'with' : 'without';
+        }
+	elsif ($exitcode != 0) {
+                die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+                 ($exitcode & 127),  ($exitcode & 128) ? 'with' : 'without';
         }else {
-               	warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+               	warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $exitcode >> 8;
         }
 		return @{$ret};
 }
