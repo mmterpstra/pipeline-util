@@ -513,7 +513,7 @@ dev.off()
 END
 	open my $plotscript,">",$dataTable.".Rscript" or die "Write Rscript error";
 	print {$plotscript} $rscript;
-	my $ret=CmdRunner(Rscript $dataTable.Rscript);
+	my $ret=CmdRunner("Rscript ".$dataTable.".Rscript");
 	warn $ret;
 
 }
