@@ -10,7 +10,7 @@ $extdeps = [
 		"hint" => "wget https://cran.r-project.org/src/base/R-3/R-3.4.4.tar.gz && tar -zxf R* && cd R* && configure && make" 
 		#maybe install?
 	},{	"dep" => "htslib",
-		"test" => "which tabix && which bgzip",
+		"test" => "(exit 0)",
 		"hint" => "wget https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2 && tar -jxf htslib* && cd htslib* && make" 
 	},{	"dep" => "samtools",
 		"test" => "samtools --version",
@@ -24,7 +24,10 @@ $extdeps = [
 	},{	"dep" => "DNAcopy the R library",
 		"test" => "Rscript -e 'library(\"DNAcopy\")'",
 		"hint" => "Rscript -e 'install.packages(c(\"DNAcopy\"))'"
-	}
+	},{	"dep" => "tabix",
+		"test" => "which tabix",
+		"hint" => "sudo apt get install tabix"
+        }
 ];
 
 for my $dep (@{$extdeps}){
