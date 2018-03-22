@@ -17,6 +17,45 @@ perl scripts require the following libraries:
 - **Scalar::Util** qw /looks_like_number/ 
 - **Vcf** (the vcftools library for reading vcf files)
 
+## INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+## DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+software (executables should be available in $PATH):
+- R
+- DNAcopy (R library)
+- samtools
+- htslib
+- bwa
+
+perl:  
+- **Data::Dumper**
+- **Getopt::Std**
+- **List::MoreUtils** qw(uniq)
+- **List::Util** qw(sum min max)
+- **Scalar::Util** qw /looks_like_number/
+- **Vcf** (the vcftools library for reading vcf files)
+
+
+COPYRIGHT AND LICENCE
+
+Put the correct copyright and licence information here.
+
+Copyright (C) 2018 by m.m.terpstra.cluster@gmail.com
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.20.2 or,
+at your option, any later version of Perl 5 you may have available.
+
 ----
 
 ## Script descriptions
