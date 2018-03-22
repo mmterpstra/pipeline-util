@@ -45,16 +45,18 @@ sub CmdRunner {
         @{$ret} = `($cmd )2>&1`;
         if ($? == -1) {
                 die localtime( time() ). " [ERROR] failed to execute: $!\n";
-        }elsif ($? & 127) {
-                die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
-                 ($? & 127),  ($? & 128) ? 'with' : 'without';
-        }elsif ($? != 0) {
+        }
+	#elsif ($? & 127) {
+        #        die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
+        #         ($? & 127),  ($? & 128) ? 'with' : 'without';
+        #}
+	elsif ($? != 0) {
                 die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
                  ($? & 127),  ($? & 128) ? 'with' : 'without';
         }else {
                	warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
         }
-	return @{$ret};
+		return @{$ret};
 }
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
