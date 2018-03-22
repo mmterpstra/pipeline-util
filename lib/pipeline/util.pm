@@ -1,4 +1,4 @@
-package pipeline-util;
+package pipeline::util;
 
 use 5.020002;
 use strict;
