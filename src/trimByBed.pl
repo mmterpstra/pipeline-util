@@ -67,7 +67,7 @@ sub wrapper {
 	}
 	
 	if( -e  $opts -> {'t'} . ".tmp.sam " || -e $opts -> {'t'} . ".samfifo"){
-		Die "something strange happend the ". $opts -> {'t'} . ".tmp.sam or the " .$opts -> {'t'} . ".samfifo" is still present" 
+		die "something strange happend the ". $opts -> {'t'} . ".tmp.sam or the " .$opts -> {'t'} . ".samfifo is still present" ;
 	}
 }
 sub CmdRunner {
