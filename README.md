@@ -36,6 +36,7 @@ software (executables should be available in $PATH):
 - samtools
 - htslib
 - bwa
+- vcftools (This contains the Vcf.pm the tools complain about)
 
 perl:  
 - **Data::Dumper**
@@ -43,7 +44,7 @@ perl:
 - **List::MoreUtils** qw(uniq)
 - **List::Util** qw(sum min max)
 - **Scalar::Util** qw /looks_like_number/
-- **Vcf** (the vcftools library for reading vcf files)
+- not on cpan: **Vcf** (the vcftools library for reading vcf files)
 
 
 COPYRIGHT AND LICENCE

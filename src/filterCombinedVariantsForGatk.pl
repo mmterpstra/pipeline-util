@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl -w
 use warnings;
 use strict;
 my $last = '1'; 

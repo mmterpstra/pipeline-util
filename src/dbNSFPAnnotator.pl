@@ -1,3 +1,4 @@
+#!/usr/bin/env perl -w
 use warnings;
 use strict;
 use Vcf;
