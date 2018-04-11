@@ -4,6 +4,7 @@ use strict;
 use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Carp;
+use Scalar::Util qw/reftype/;
 
 main();
 
@@ -16,12 +17,14 @@ sub main{
 	#  -b /groups/umcg-oncogenetics/tmp04/res/probe_ET1262F_2_182.ensembl.bed -S |\
 	# perl tickerRefine.pl - ) <(grep -vP '^\@'  3294553_IN-14_1545_A1_1_simple.sam  ) |\
 	#tail -n 40
-	
 	#tail -n 40 || tickertape.pl
 	
 	warn "Commandline: $0 ".join(' ',@ARGV)."\n";
 	
 	my $recordsLast;
+
+	#$recordsLast=[];
+
 	my $buffer;
 	
 	while(<>){
@@ -71,10 +74,12 @@ sub main{
 	        warn "record,recordsLast,buffer".Dumper($record,$recordsLast,$buffer).$. if(GetNameRead($record) =~  m/820$/);
 		
 	}
-	#purge buffer
-	push(@{$buffer}, @{$recordsLast});
-	$recordsLast = PickBest($buffer);
-	print Writer($recordsLast);
+	#purge buffer whith catchall if only one line
+	if(defined $recordsLast ){
+		push(@{$buffer}, @{$recordsLast});
+		$recordsLast = PickBest($buffer);
+		print Writer($recordsLast);
+	}
 }
 
 
@@ -200,7 +205,7 @@ sub PickBest{
 
 sub EqualReadNames {
 	my $r=shift(@_);
-	if(scalar(@{$r->[0]})){
+	if((reftype $r->[0] eq reftype [])&& scalar(@{$r->[0]})){
 		#warn "scalar ref reassign of because of nesting ".Dumper($r,$r2);
 		$r = $r -> [0];
 		#warn "after:". Dumper($r,$r2);
