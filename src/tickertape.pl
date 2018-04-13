@@ -240,7 +240,7 @@ sub GetProbePeMetrics{
 
 sub PrependHeader {
 	my ($samfile, $headersamfile) = @_;
-	my $cmd = "set -e -o pipefail && head -n ".$opts -> {'l'} ." $headersamfile | grep  \"^\@\"  > ". $samfile;
+	my $cmd = "bash -c 'set -e -o pipefail && head -n ".$opts -> {'l'} ." $headersamfile | grep  \"^\@\"  > ". $samfile. "'";
 	#warn $cmd;
 	my @ret = CmdRunner($cmd);
 	warn join("",@ret) if(join("",@ret) ne '');

@@ -52,13 +52,13 @@ sub wrapper {
 	}
 	#good luck at debug
 	#											    
-	my $cmd="set -e -x -o pipefail && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo; ". #next is bg program so end with ; 
+	my $cmd="bash -c 'set -e -x -o pipefail && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo; ". #next is bg program so end with ; 
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
 	"paste - ".$opts -> {'t'}.".samfifo |".
 	"perl ".$opts -> {'bin'}."tickertape.pl -h ".$opts -> {'t'} . ".tmp.sam -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." & pid=\$!;".#end of pipe so write down pid
-	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait \$pid; rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
+	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait \$pid; rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo'";
 	
 	my $ret;
 	@{$ret} = CmdRunner($cmd);

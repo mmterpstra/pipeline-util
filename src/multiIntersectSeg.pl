@@ -120,7 +120,7 @@ sub MultiInter {
 	my $dataMultiInter;
 	
 	for my $bed (@{$bedFiles}){
-		my $cmd = 'set -e -o pipefail && bedtools multiinter -i '.join(" ", @{$bedFiles}).'|cut -f1,2,3 |bedtools intersect -wao -a - -b '.$bed;
+		my $cmd = "bash -c 'set -e -o pipefail && bedtools multiinter -i ".join(" ", @{$bedFiles})."|cut -f1,2,3 |bedtools intersect -wao -a - -b ".$bed."'";
 	
 		warn localtime(time())." [INFO] running bedtools for bed annotation as '$cmd'\n";
 		open(my $multannothandle,'-|',$cmd);
