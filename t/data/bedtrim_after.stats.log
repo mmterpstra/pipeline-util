@@ -1,0 +1,4 @@
+probe	fragLenPe	count
+probe	fragLenSe	count
+.	discordant	5
+probe50_90_m	71	5

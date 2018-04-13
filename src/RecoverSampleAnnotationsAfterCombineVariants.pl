@@ -385,5 +385,9 @@ sub CmdRunner {
 	}else {
 		warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
 	}
+	for (@{$ret}){
+		$_ =~ s!^(\s*)!$1    $0:!g;
+	}
+
 	return join('',@{$ret});
 }

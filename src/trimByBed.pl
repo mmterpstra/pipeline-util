@@ -31,6 +31,8 @@ sub main {
 	#warn $opts -> {'bin'};
 	
 	wrapper($opts);
+
+	warn "[INFO] program done!\n";
 }
 sub wrapper {
 	my $opts = shift @_;
@@ -49,26 +51,28 @@ sub wrapper {
 		unlink($opts -> {'t'}.".samfifo");
 	}
 	#good luck at debug
-	my $cmd="set -x -o pipefail;set -e && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo && ".
+	#											    
+	my $cmd="set -e -x -o pipefail && " . $createSamFile . "&&  mkfifo ".$opts -> {'t'}.".samfifo; ". #next is bg program so end with ; 
 	" samtools view -Sb ".$opts -> {'t'}.".tmp.sam |".
 	" bedtools intersect -wao -bed -a -  -b ".$opts -> {'b'}."  | ".
 	"perl ".$opts -> {'bin'}."tickerRefine.pl - | ".
 	"paste - ".$opts -> {'t'}.".samfifo |".
-	"perl ".$opts -> {'bin'}."tickertape.pl -h ".$opts -> {'t'} . ".tmp.sam -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." &".
-	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait && rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
+	"perl ".$opts -> {'bin'}."tickertape.pl -h ".$opts -> {'t'} . ".tmp.sam -1 " . $opts -> {'o'} . "_R1.fq.gz  -2 ".$opts -> {'o'}."_R2.fq.gz -U ".$opts -> {'o'}.".fq.gz -s ".$opts -> {'n'}." & pid=\$!;".#end of pipe so write down pid
+	"perl ".$opts -> {'bin'}."refineSam.pl  ".$opts -> {'t'}.".tmp.sam >  ".$opts -> {'t'}.".samfifo; wait \$pid; rm -v "  . $opts -> {'t'} . ".tmp.sam "  . $opts -> {'t'} . ".samfifo";
 	
 	my $ret;
 	@{$ret} = CmdRunner($cmd);
 	
 	warn "[INFO] system call results:\n";
 	for (@{$ret}){
-		$_ =~ s!^!   !g;
 		print STDERR $_;
 	}
 	
 	if( -e  $opts -> {'t'} . ".tmp.sam " || -e $opts -> {'t'} . ".samfifo"){
 		die "something strange happend the ". $opts -> {'t'} . ".tmp.sam or the " .$opts -> {'t'} . ".samfifo is still present" ;
 	}
+	
+	
 }
 sub CmdRunner {
         my $ret;
@@ -80,13 +84,18 @@ sub CmdRunner {
         if ($? == -1) {
                 die localtime( time() ). " [ERROR] failed to execute: $!\n";
         }elsif ($? & 127) {
+		warn join("\t",@{$ret});
                 die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
                  ($? & 127),  ($? & 128) ? 'with' : 'without';
         }elsif ($? != 0) {
+		warn join("\t",@{$ret});
                 die localtime( time() ). " [ERROR] " .sprintf "child died with signal %d, %s coredump",
                  ($? & 127),  ($? & 128) ? 'with' : 'without';
         }else {
                	warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
+        }
+	for (@{$ret}){
+                $_ =~ s!^(\s*)!$1    $0:!g;
         }
 	return @{$ret};
 }

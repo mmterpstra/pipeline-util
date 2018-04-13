@@ -240,15 +240,18 @@ sub GetProbePeMetrics{
 
 sub PrependHeader {
 	my ($samfile, $headersamfile) = @_;
-	my $cmd = "set -e -o pipefail && head -n '.$opts -> {'l'} .' $headersamfile | grep  \"^\@\"  > ". $samfile;
-	warn $cmd;
-	warn CmdRunner($cmd);
+	my $cmd = "set -e -o pipefail && head -n ".$opts -> {'l'} ." $headersamfile | grep  \"^\@\"  > ". $samfile;
+	#warn $cmd;
+	my @ret = CmdRunner($cmd);
+	warn join("",@ret) if(join("",@ret) ne '');
 }
 sub PrependHeaderHandle {
 	my ($samout, $headersamfile) = @_;
 	
 	open(my $samin,'<',$headersamfile) or die "[ERROR] cannot open headerfile.";
+	
 	warn "info".Dumper($samout, $headersamfile, $samin)." ";
+	
 	#my $line;
 	while(<$samin>){
 		last if(not(m/^@/));
@@ -723,8 +726,9 @@ sub GetSam {
 		GetTlenRead($r),	#8
 		GetSeqRead($r),		#9
 		GetQualRead($r),	#10
-		GetOptionalFields($r) 	#11+
+#		GetOptionalFields($r) 	#11+
 	);
+	push(@{$sam},GetOptionalFields($r)) if(defined(GetOptionalFields($r)));
 	return $sam;
 }
 
@@ -1492,5 +1496,10 @@ sub CmdRunner {
 	}else {
 		warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $? >> 8;
 	}
+	
+	for (@{$ret}){
+		$_ =~ s!^(\s*)!$1    $0:!g;
+	}
+
 	return @{$ret};
 }

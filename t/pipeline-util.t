@@ -38,7 +38,7 @@ my $exes = [
 ];
 
 
-use Test::More tests => 26;
+use Test::More tests => 27;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
@@ -49,3 +49,9 @@ BEGIN { use_ok('pipeline::util') };
 for my $exe (@{$exes}){
 	ok(system('bash -c "echo > /dev/stderr && set -ex && perl -wc '.$exe.'"') == 0, "$exe syntax test");
 }
+# test bedtrim
+ok(system( 'bash -c "echo > /dev/stderr && set -ex && ' .
+	'perl src/trimByBed.pl -s t/data/bedtrim_before.sam  -b t/data/bedtrim_probe.bed -o t/data/bedtrim_test -n t/data/bedtrim_test && ' . 
+	'diff <(samtools view t/data/bedtrim_after.bam ) <(samtools view t/data/bedtrim_test.bam )"' ) == 0, "bedtrim minimal functional test");
+
+
