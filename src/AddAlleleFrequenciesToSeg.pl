@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -w
+#!/usr/bin/env perl
 BEGIN{
 	push @INC,'/home/terpstramm/software/vcftools_0.1.9/lib/perl5/site_perl/';
 }
