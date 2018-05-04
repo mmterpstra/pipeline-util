@@ -34,11 +34,12 @@ my $exes = [
         'src/updateGTPLByAD.pl',
         'src/updateSimilarPos.pl',
         'src/VcfaddAdBasedZScores.pl',
-        'src/VcfSnpEffAsGatk.pl'
+        'src/VcfSnpEffAsGatk.pl',
+	'src/VcfQssFix.pl',
 ];
 
 
-use Test::More tests => 27;
+use Test::More tests => 28;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
