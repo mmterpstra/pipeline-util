@@ -102,6 +102,7 @@ WriteMakefile(
 		'src/updateSimilarPos.pl',
 		'src/VcfaddAdBasedZScores.pl',
 		'src/VcfSnpEffAsGatk.pl',
+		'src/VcfQssFix.pl',
 	],
 
 	"ABSTRACT_FROM"     => 'lib/pipeline/util.pm', # retrieve abstract from module
