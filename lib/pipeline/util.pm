@@ -28,7 +28,7 @@ our @EXPORT = qw(
 	TargetVcfReAnnotator
 );
 
-our $VERSION = "0.8.7";
+our $VERSION = "0.8.8";
 
 
 # Preloaded methods go here.
@@ -100,7 +100,7 @@ sub GetBufferedPosNext {
 	my $x;
 	warn "next amount ".scalar(@{$self -> {'buffer'} -> {'next'}})." ";
 	while( scalar(@{$self -> {'buffer'} -> {'next'}}) == 0 and $x=$targetvcf -> next_data_hash()){
-		warn '## VC ## '. Dumper($x). ' ';
+		#warn '## VC ## '. Dumper($x). ' ';
 		if(scalar(@{$self -> {'buffer'} -> {'current'}}) == 0){
 			#init and add first val of array
 			$self -> {'buffer'} -> {'current'} = [$x] or confess Dumper($x);
@@ -124,8 +124,9 @@ sub GetBufferedPosNext {
 
 	}
 
-	croak(Dumper($self -> {'buffer'})) if (@{$self -> {'buffer'} -> {'current'}} >1);
-	warn "result## ".scalar(@{$self -> {'buffer'} -> {'current'}})." ";
+
+		#croak(Dumper($self -> {'buffer'})) if (@{$self -> {'buffer'} -> {'current'}} >1);
+		#carp "x=".Dumper($x)."vcf=".Dumper($targetvcf).".result## ".scalar(@{$self -> {'buffer'} -> {'current'}})." ";
 	if(scalar(@{$self -> {'buffer'} -> {'current'}}) > 0){
 		return $self -> {'buffer'} ;
 	}else{
@@ -138,7 +139,7 @@ sub GetBufferedPosByLoc {
 	SelfRequire(%{$self}, 'req'=> ['vcf', 'buffer','loc']);
 	
 	#$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
-	warn Dumper($self -> {'buffer'} , $self -> {'loc'})." ";
+	warn LocGetChromPosAsString('loc'=>  $self -> {'loc'})." ";
 	#scalar(@{$self -> {'buffer'} -> {'next'}}) == 0)
 	my $count = 0;
 	while( (ChromPosIsNext('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0],'vcf'=>$self->{'vcf'}) || 
@@ -147,16 +148,21 @@ sub GetBufferedPosByLoc {
 		$count++;
 		#croak "test";
 		$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
-		warn Dumper(\$count,$self -> {'buffer'} , $self -> {'loc'})." ";		
+		last if(not(defined(@{$self->{'buffer'} -> {current}})) );		
+		warn join (",\n",($count, LocGetChromPosAsString('loc'=>$self -> {'buffer'} -> {'current'} -> [0]) , LocGetChromPosAsString('loc'=>$self -> {'loc'})))." ";		
 		die "problems here" if($count > 10);
 	}
 	
-	if(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0])){
+	if(not(defined(@{$self->{'buffer'} -> {current}})) ){
+		return undef;
+	}elsif(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0])){
 		#return if equal
 		return $self -> {'buffer'};
-	}else{
+	}elsif(ChromPosIsNext('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0],'vcf'=>$self->{'vcf'})){
 		#return if higher then pos #note the same behavior as above, im not sure what to do here
 		return $self -> {'buffer'};
+	}else{
+		return undef;
 	}
 }
 
@@ -220,7 +226,10 @@ sub ChromPosIsNext  {
 		return 0;
 	}
 }
-
+sub LocGetChromPosAsString{
+	my $self; %{$self} = @_;
+	return $self -> {'loc'} -> {'CHROM'}.":".$self -> {'loc'} -> {'POS'};
+}
 1;
 __END__
 

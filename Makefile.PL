@@ -1,6 +1,12 @@
 use 5.020002;
 use ExtUtils::MakeMaker;
 
+#How to add a new file
+# -create the script and put in into src
+# -update the tests to do al least a syntax test
+# -Update pipeline/util with newer version numer
+#git add & commit it
+
 
 my $extdeps;
 $extdeps = [
@@ -65,6 +71,9 @@ sub CmdRunner {
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+
+my @exe_files = glob("src/*.pl");
+
 WriteMakefile(
 	"NAME"              => 'pipeline::util',
 	"VERSION_FROM"      => 'lib/pipeline/util.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
@@ -76,35 +85,7 @@ WriteMakefile(
 		'Test::More' => '0.47',
 		'ExtUtils::MakeMaker' => '0'
 	},
-	"EXE_FILES" => [
-		'src/AddAdBasedAnnotations.pl',
-		'src/AddAlleleFrequenciesToSeg.pl',
-		'src/CalleriseVcf.pl',
-		'src/CollectNugeneLandingProbeMetrics.pl',
-		'src/dbNSFPAnnotator.pl',
-		'src/DumpFieldsForVariantsToTable.pl',
-		'src/filterCombinedVariantsForGatk.pl',
-		'src/FilterFreeBayes.pl',
-		'src/ForGerardTeMeermanVcfAnnotation.pl',
-		'src/GenerateTableDescriptionByVcfHeader.pl',
-		'src/GTfGet1000bpExonsBeforeTES.pl',
-		'src/multiIntersectSeg.pl',
-		'src/MutectAnnotationsToSampleFormat.pl',
-		'src/NugeneDigitalSplitter.pl',
-		'src/PlotFloatsOnInterVals.pl',
-		'src/RecoverSampleAnnotationsAfterCombineVariants.pl',
-		'src/refineSam.pl',
-		'src/SampleSheetAddVal.pl',
-		'src/tickerRefine.pl',
-		'src/tickertape.pl',
-		'src/trimByBed.pl',
-		'src/updateGTPLByAD.pl',
-		'src/updateSimilarPos.pl',
-		'src/VcfaddAdBasedZScores.pl',
-		'src/VcfSnpEffAsGatk.pl',
-		'src/VcfQssFix.pl',
-	],
-
+	"EXE_FILES" => [@exe_files],
 	"ABSTRACT_FROM"     => 'lib/pipeline/util.pm', # retrieve abstract from module
 	"AUTHOR"            => 'm.m.terpstra',
 	#LICENSE           => 'perl',

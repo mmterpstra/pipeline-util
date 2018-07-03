@@ -36,10 +36,11 @@ my $exes = [
         'src/VcfaddAdBasedZScores.pl',
         'src/VcfSnpEffAsGatk.pl',
 	'src/VcfQssFix.pl',
+	'src/VcfTableExportOneVariantPerSample.pl',
 ];
 
 
-use Test::More tests => 28;
+use Test::More tests => 29;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
