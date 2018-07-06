@@ -30,11 +30,13 @@ for my $file (@ARGV){
 	my %GtFields;
 	my %generalFields;
 	my $generalFieldsIndex = 0;
+	#Find the samplespecific fields
 	for my $field (reverse(@header)){
 		#warn $field;
 		#exac 
 		my $lastdotindexfield = GetLastIndex($field,'.');
-		if($lastdotindexfield > 0 && not(((index($field,'exac') >= 0)|| (index($field,'1000gPhase1') >= 0)|| (index($field,'cosmic') >= 0 )||(index($field,'dbNSFP') >= 0 )|| (index($field,'dbsnp') >= 0 ) || (index($field,'DBSNP') >= 0 ) || (index($field,'dbSNP') >= 0 ) || (index($field,'dbSnp') >= 0 ) ||  (index($field,'ID') >= 0 ) || (index($field,'dbSNPBuildID') >= 0 ) || (index($field,'1000g') >= 0 ) || (index($field,'VariantType') >= 0 ) || (index($field,'Samples') >= 0)))){
+		#exception fiel fields containing dots but arent sample fields
+		if($lastdotindexfield > 0 && not(((index($field,'technology') >= 0) || (index($field,'exac') >= 0)|| (index($field,'1000gPhase1') >= 0)|| (index($field,'cosmic') >= 0 )||(index($field,'dbNSFP') >= 0 )|| (index($field,'dbsnp') >= 0 ) || (index($field,'DBSNP') >= 0 ) || (index($field,'dbSNP') >= 0 ) || (index($field,'dbSnp') >= 0 ) ||  (index($field,'.ID') >= 0 ) || (index($field,'dbSNPBuildID') >= 0 ) || (index($field,'1000g') >= 0 ) || (index($field,'VariantType') >= 0 ) || (index($field,'Samples') >= 0)))){
 			my $sample = substr($field,0,$lastdotindexfield);
 			$samples{$sample}++;
 			my $GtField = substr($field,$lastdotindexfield+1);
