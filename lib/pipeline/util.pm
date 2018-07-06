@@ -148,12 +148,12 @@ sub GetBufferedPosByLoc {
 		$count++;
 		#croak "test";
 		$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
-		last if(not(ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) );		
+		last if(not(defined($self->{'buffer'} -> {current}) && ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) );		
 		warn join (",\n",($count, LocGetChromPosAsString('loc'=>$self -> {'buffer'} -> {'current'} -> [0]) , LocGetChromPosAsString('loc'=>$self -> {'loc'})))." ";		
 		die "problems here" if($count > 10);
 	}
 	
-	if(not(defined(@{$self->{'buffer'} -> {current}})) ){
+	if(not(defined($self->{'buffer'} -> {current}) && ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) ){
 		return undef;
 	}elsif(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0])){
 		#return if equal
