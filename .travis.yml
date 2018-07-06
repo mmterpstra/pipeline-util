@@ -2,13 +2,13 @@ language: perl
 perl:
   - "5.22"
 before_install:
-- sudo apt install -qq samtools
-- sudo apt install -qq bedtools
-- sudo apt install -qq libhts0
-- sudo apt install -qq r-base
-- sudo apt install -qq tabix
-- sudo apt install -qq vcftools
-- sudo apt install -qq bwa
+- sudo apt-get install -qq samtools
+- sudo apt-get install -qq bedtools
+- sudo apt-get install -qq libhts0
+- sudo apt-get install -qq r-base
+- sudo apt-get install -qq tabix
+- sudo apt-get install -qq vcftools
+- sudo apt-get install -qq bwa
 - (set -e -x; wget 'https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2' &&  tar xf samtools-1.3.1.tar.bz2 && cd samtools-1.3.1/ && make && make prefix=/home/travis/ install )&& export PATH=/home/travis/bin/:$PATH
 - wget https://github.com/arq5x/bedtools2/releases/download/v2.26.0/bedtools-2.26.0.tar.gz && tar -zxvf bedtools-2.26.0.tar.gz && pushd bedtools2 && make && popd && export PATH=$PWD/bedtools2/bin/:$PWD/bedtools2/src/:$PATH
 - sudo Rscript -e 'source("http://bioconductor.org/biocLite.R");biocLite("DNAcopy")'
