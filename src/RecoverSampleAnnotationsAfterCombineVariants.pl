@@ -4,6 +4,7 @@ use strict;
 use Vcf;
 #use Devel::Confess;
 use Data::Dumper;
+use pipeline::util;
 
 my $use = <<"END";
 	$0 COMPLEXMERGEVCF LOSTSAMPLEINFOVCF [VCF]

@@ -26,6 +26,10 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
 	LinePosLastHandleLogger
 	TargetVcfReAnnotator
+	WalkToTarget
+	NewWalk
+	WalkToNext
+	_formatwalkasvcflineswithfile
 );
 
 our $VERSION = "0.8.8";
@@ -73,10 +77,140 @@ sub TargetVcfReAnnotator{
 	#insert code
 
 }
+sub NewWalk{
+	#run like 	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
+	# this opens the relavant files and stores the data 
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['targetvcf', 'vcflist']);
+	my $walk;
+        $walk -> {'targetvcf' } -> {'file' } = $self -> {'targetvcf'};
+	$walk -> {'targetvcf' } -> {'handle' } = Vcf->new(file=> $self -> {'targetvcf'});
+	$walk -> {'targetvcf' } -> {'handle' } -> parse_header();
+	$walk -> {'targetvcf' } -> {'buffer' } = {'current' => [],'next' => [ $walk -> {'targetvcf' } -> {handle} -> next_data_hash() ] };#GetBufferedPosNext('vcf' =>\$targetvcf,'buffer' => $targetposbuffer) or die "Empty vcf!! Cannot parse";
 
+	#$walk -> {'vcfs' };
+	for my $vcf (@{$self -> {'vcflist'}}){
+		push(@{$walk -> {'vcfs' }},{'file' => $vcf,'handle'=>Vcf->new(file=> $vcf)});
+	        $walk -> {'vcfs' } -> [-1] -> {handle}->parse_header();
+		$walk -> {'vcfs' } -> [-1] -> {buffer} = {'current' => [],'next' => [$walk -> {'vcfs' } -> [-1] -> {handle} -> next_data_hash()]};
+	}
+	
+	return $walk;
+}
+sub WalkToNext {
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['walk']);
+	my $walk = $self -> {'walk'};
+	#get new position from vcf
+	if(not(scalar(@{$walk -> {'targetvcf' } -> {'buffer' } -> {'next'}}) == 0)){
+		$walk -> {'targetvcf' } -> {'buffer' } = GetBufferedPosNext('vcf' =>$walk -> {'targetvcf' } -> {'handle' },'buffer' => $walk -> {'targetvcf' } -> {'buffer' }) or return undef;
+	}else {
+		return undef;
+	}
+	#sync the other vcfs
+	for my $vcf (@{$walk -> {'vcfs'}}){
+		SyncVcfToTarget('vcf' => $vcf,'pos' => $walk -> {'targetvcf' } -> {'buffer'} -> {'current'} -> [0]);
+		
+	}
+	_formatwalkasvcflineswithfile('walk' => $walk);
+	if(not scalar(@{$walk -> {'targetvcf' } -> {'buffer' } -> {'next'}})){
+		return undef;
+	}
+	return 1;
+}
+sub _formatwalkasvcflineswithfile {
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['walk']);
+	my $walk = $self -> {'walk'};
+	#$vcf->format_line($x);
+	print '<-----'."\n"; 
+	for my $vcf ($walk -> {'targetvcf' },@{$walk -> {'vcfs' }}){
+		for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
+			#Dumper($record);
+			next if not(scalar(keys(%{$record})));
+			print $vcf -> {'file' } . ":\tcurr:\t" .
+				$vcf -> {'handle' } -> format_line($record);
+		}
+		for my $record (@{$vcf -> {'buffer' } -> {'next'}}){
+			next if not(scalar(keys(%{$record})));
+			print $vcf -> {'file' } . ":\tnext:\t" .
+				$vcf -> {'handle' } -> format_line($record);
+		}
+	}
+	print '----->'."\n";
+}
+sub SyncVcfToTarget{
+	my $self ;%{$self}= @_ ;
+	#@{$self -> {'vcflist'}}=($self -> {'targetvcf'});
+#	SelfRequire(%{$self},'req'=> ['walk']);
+	SelfRequire(%{$self},'req'=> ['vcf','pos']);	
+	#my $walk = $self -> {'walk'};
+	my $continue = 1;
+	while ($continue == 1 && ($self -> {'vcf' } -> {'buffer'} = GetBufferedPosNext('vcf' =>$self -> {'vcf' } -> {'handle'},'buffer' => $self -> {'vcf' } -> {'buffer'}))){
+		
+		#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
+		
+		#Goes till
+		if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])) || ChromPosIsNext('loc2' => $self -> {'pos'}, 'loc1' => $self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0], 'vcf' => $self -> {'vcf'} -> {'handle'})){
+			
+			warn Dumper({'CHROM' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'CHROM'},'POS' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'POS'}});
+			
+			$continue = 0;
+			
+		}
+		
+	}
+	#if( scalar(keys %{$self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0]})){
+	#	warn "Current ".Dumper(GetLoc(%{$self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0]})). " ";
+	#}
+	#if( scalar(keys %{$self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0]}) ){
+	#	warn "Next ".Dumper(GetLoc(%{$self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0]})). " ";
+	#}
+	#warn "Sync done ";
+}
+
+sub WalkToTarget{
+	my $self ;%{$self}= @_ ;
+	@{$self -> {'vcflist'}}=($self -> {'targetvcf'});
+	SelfRequire(%{$self},'req'=> ['targetvcf', 'vcflist','pos']);
+	my $targetvcf = Vcf->new(file=> $self -> {'targetvcf'});
+	$targetvcf->parse_header();
+	print $targetvcf->format_header();
+
+	
+	my $vcfs;
+	for my $vcf (@{$self -> {'vcflist'}}){
+		push(@{$vcfs},{'handle'=>Vcf->new(file=> $vcf)});
+	        $vcfs -> [-1] -> {handle}->parse_header();
+		$vcfs -> [-1] -> {buffer} = {'current' => [],'next' => []};
+	}
+	
+	#iterate target file and collect data for one position across all files
+	my $targetposbuffer = {'current' => [],'next' => []};
+	
+	my $vcfbuffers;
+	#warn Dumper($targetvcf->next_data_hash()). ' ';
+	my $continue = 1;
+	while ($continue == 1 && ($targetposbuffer=GetBufferedPosNext('vcf' =>\$targetvcf,'buffer' => $targetposbuffer))){
+		
+		#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
+		
+		#Goes till
+		if(ChromPosIsNext('loc2' => $self -> {'pos'}, 'loc1' => $targetposbuffer -> {'next'} -> [0], 'vcf' => $targetvcf)){
+			
+			warn Dumper({'CHROM' => $targetposbuffer -> {'current'} -> [0] -> {'CHROM'},'POS' => $targetposbuffer -> {'current'} -> [0] -> {'POS'}});
+			
+			$continue = 0;
+			
+		}
+		
+	}
+	warn Dumper(GetLoc(%{$targetposbuffer -> {'current'} -> [0]}));
+	warn "done ";
+}
 sub SelfRequire {
         #calls like SelfRequire(%{$self}, 'req'=> ['vcf', 'fields']);
-        my $self;
+        my $self;#carp "## ";
         %{$self}=@_ or  confess "input not parseable as hash:".Dumper(@_). ' ';
         #die Dumper($self)." ";
         my $reqs = $self -> {'req'} or die "no requirement array as input";
@@ -84,88 +218,105 @@ sub SelfRequire {
                 defined($self -> {$tag}) or confess "no requirement '$tag' as input";
         }
 }
+sub GetLoc {
+	my $self;
+        %{$self}=@_ or  confess "input not parseable as hash:".Dumper(@_). ' ';
 
+	return {'CHROM' => $self -> {'CHROM'},'POS' => $self -> {'POS'}};
+}
 sub GetBufferedPosNext {
 	my $self; %{$self}=@_;
 	SelfRequire(%{$self}, 'req'=> ['vcf', 'buffer']);
-	my $targetvcf = ${$self -> {'vcf'}};
+	#warn Dumper($self -> {'vcf'}).' ';
+	my $targetvcf = $self -> {'vcf'} ;#or confess("Error.");
 	         #warn Dumper($targetvcf->next_data_hash()). ' ';
-
-	if(scalar(@{$self -> {'buffer'} -> {'next'}}) > 0){
-		$self -> {'buffer'} -> {'current'}=$self -> {'buffer'} -> {'next'};
-		@{$self -> {'buffer'} -> {'next'}}= ();
+	
+	$self -> {'buffer'} = PosBufferBufferCleanUp('buffer' => $self -> {'buffer'});
+	if(scalar(@{$self -> {'buffer'} -> {'next'}})){
+		$self -> {'buffer'} -> {'current'} = $self -> {'buffer'} -> {'next'};
+		$self -> {'buffer'} -> {'next'} = [];
 	}
 	#what works : defined($self -> {'buffer'} -> {'current'}) or defined($self -> {'buffer'} -> {'current'} -> [0] ? )
 	#warn '## Buffer ##'. Dumper($self -> {'buffer'})." ";
 	my $x;
-	warn "next amount ".scalar(@{$self -> {'buffer'} -> {'next'}})." ";
-	while( scalar(@{$self -> {'buffer'} -> {'next'}}) == 0 and $x=$targetvcf -> next_data_hash()){
+	#warn "next amount ".scalar(@{$self -> {'buffer'} -> {'next'}})." ";
+	while( scalar(@{$self -> {'buffer'} -> {'next'}}) == 0 and my $x=$targetvcf -> next_data_hash()){
 		#warn '## VC ## '. Dumper($x). ' ';
-		if(scalar(@{$self -> {'buffer'} -> {'current'}}) == 0){
-			#init and add first val of array
-			$self -> {'buffer'} -> {'current'} = [$x] or confess Dumper($x);
-			#push(@{$self -> {'buffer'} -> {'current'}},$x);
-			warn 'Init';
-		}elsif(scalar(@{$self -> {'buffer'} -> {'current'}} ) && 
-			$x -> {'POS'} eq $self -> {'buffer'} -> {'current'} -> [0] ->  {'POS'} && 
-			$x -> {'CHROM'} eq $self -> {'buffer'} -> {'current'} -> [0] ->  {'CHROM'}){
-			warn 'Grow';
-			#grow array
-			push(@{$self -> {'buffer'} -> {'current'}},$x);
-		}else{
-			#chrom / pos not the same so dump as warning
-			#croak(Dumper($self -> {'buffer'}));
-			warn 'Next';
-			#assign to next
-			$self -> {'buffer'} -> {'next'} = [$x];
-
-			#process next
-                }
+		$self -> {'buffer'} -> {'next'} = [$x];
+		$self -> {'buffer'} = PosBufferBufferCleanUp('buffer' => $self -> {'buffer'});
 
 	}
 
 
 		#croak(Dumper($self -> {'buffer'})) if (@{$self -> {'buffer'} -> {'current'}} >1);
 		#carp "x=".Dumper($x)."vcf=".Dumper($targetvcf).".result## ".scalar(@{$self -> {'buffer'} -> {'current'}})." ";
-	if(scalar(@{$self -> {'buffer'} -> {'current'}}) > 0){
+	if(scalar(@{$self -> {'buffer'} -> {'current'}}) > 0 ){
 		return $self -> {'buffer'} ;
 	}else{
 		return undef;
 	}
 }
-
-sub GetBufferedPosByLoc {
+sub PosBufferBufferCleanUp {
 	my $self; %{$self}=@_;
-	SelfRequire(%{$self}, 'req'=> ['vcf', 'buffer','loc']);
-	
-	#$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
-	warn LocGetChromPosAsString('loc'=>  $self -> {'loc'})." ";
-	#scalar(@{$self -> {'buffer'} -> {'next'}}) == 0)
-	my $count = 0;
-	while( (ChromPosIsNext('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0],'vcf'=>$self->{'vcf'}) || 
-		not(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0]))) && 
-		scalar($self->{'buffer'}->{'current'}) > 0){
-		$count++;
-		#croak "test";
-		$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
-		last if(not(defined($self->{'buffer'} -> {current}) && ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) );		
-		warn join (",\n",($count, LocGetChromPosAsString('loc'=>$self -> {'buffer'} -> {'current'} -> [0]) , LocGetChromPosAsString('loc'=>$self -> {'loc'})))." ";		
-		die "problems here" if($count > 10);
-	}
-	
-	if(not(defined($self->{'buffer'} -> {current}) && ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) ){
-		return undef;
-	}elsif(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0])){
-		#return if equal
-		return $self -> {'buffer'};
-	}elsif(ChromPosIsNext('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0],'vcf'=>$self->{'vcf'})){
-		#return if higher then pos #note the same behavior as above, im not sure what to do here
-		return $self -> {'buffer'};
+	#checks if the value should be added to current next or return undef??
+	SelfRequire(%{$self}, 'req'=> [ 'buffer']);
+	if(scalar(@{$self -> {'buffer'} -> {'current'}}) == 0){
+		#init and add first val of array
+		$self -> {'buffer'} -> {'current'} = $self -> {'buffer'} -> {'next'} or confess Dumper($self -> {'buffer'} -> {'next'});
+		$self -> {'buffer'} -> {'next'} = [];
+		#push(@{$self -> {'buffer'} -> {'current'}},$x);
+		#warn 'Init';
+	}elsif(scalar(@{$self -> {'buffer'} -> {'current'}}) && defined($self -> {'buffer'} -> {'next'} -> [0] -> {'POS'}) && 
+		$self -> {'buffer'} -> {'next'} -> [0] -> {'POS'} eq $self -> {'buffer'} -> {'current'} -> [0] ->  {'POS'} && 
+		$self -> {'buffer'} -> {'next'} -> [0] -> {'CHROM'} eq $self -> {'buffer'} -> {'current'} -> [0] ->  {'CHROM'}){
+		#warn 'Grow';
+		#grow array
+		push(@{$self -> {'buffer'} -> {'current'}},%{$self -> {'buffer'} -> {'next'}});
+		$self -> {'buffer'} -> {'next'} = [];
 	}else{
-		return undef;
+		#chrom / pos not the same so dump as warning
+		#croak(Dumper($self -> {'buffer'}));
+		#warn 'Next';
+		#assign to next
+		#$self -> {'buffer'} -> {'next'} = [$x];
+		#process next
 	}
+	return $self -> {'buffer'};
 }
-
+#sub GetBufferedPosByLoc {
+#	my $self; %{$self}=@_;
+#	SelfRequire(%{$self}, 'req'=> ['vcf', 'buffer','loc']);
+#	
+#	#$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
+#	warn LocGetChromPosAsString('loc'=>  $self -> {'loc'})." ";
+#	#scalar(@{$self -> {'buffer'} -> {'next'}}) == 0)
+#	my $count = 0;
+#	while( (ChromPosIsNext('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0],'vcf'=>$self->{'vcf'}) || 
+#		not(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0]))) && 
+#		scalar($self->{'buffer'}->{'current'}) > 0){
+#		$count++;
+#		#croak "test";
+#		$self->{'buffer'}=GetBufferedPosNext('vcf'=>$self->{'vcf'},'buffer'=>$self->{'buffer'});
+#		last if(not(defined($self->{'buffer'} -> {current}) && ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) );		
+#		warn join (",\n",($count, LocGetChromPosAsString('loc'=>$self -> {'buffer'} -> {'current'} -> [0]) , LocGetChromPosAsString('loc'=>$self -> {'loc'})))." ";		
+#		die "problems here" if($count > 10);
+#	}
+#	
+#	if(not(defined($self->{'buffer'} -> {current}) && ref($self->{'buffer'} -> {current}) eq 'ARRAY' ) ){
+#		return undef;
+#	}elsif(ChromPosIsEq('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0])){
+#		#return if equal
+#		return $self -> {'buffer'};
+#	}elsif(ChromPosIsNext('loc1'=>$self->{'loc'},'loc2'=>$self->{'buffer'} -> {current} -> [0],'vcf'=>$self->{'vcf'})){
+#		#return if higher then pos #note the same behavior as above, im not sure what to do here
+#		return $self -> {'buffer'};
+#	}else{
+#		return undef;
+#	}
+#}
+#sub GetBufferedPosByLoc {
+#	
+#}
 sub LinePosLastHandleLogger {
 	my $self; %{$self}=@_;
 	SelfRequire(%{$self}, 'req'=> ['lineinterval', 'timeinterval']);
@@ -177,7 +328,8 @@ sub LinePosLastHandleLogger {
 sub GetContigsAsArray {
 	my $self; %{$self} = @_;
 	my @contigs;
-	my $vcf = ${$self -> {'vcf'}};
+	#confess "ERROR Undefinded" .Dumper($self -> {'vcf'});
+	my $vcf = $self -> {'vcf'} or confess "ERROR Undefinded" .Dumper($self -> {'vcf'});
 	#warn Dumper($vcf -> {'header_lines'})." ";
 	for my $hdata (@{$vcf -> {'header_lines'}}){
 		if($hdata -> {'key'} eq 'contig'){
@@ -190,6 +342,7 @@ sub GetContigsAsArray {
 }
 
 sub ContigIsNext {
+	#checks if 
 	my $self ;%{$self} = @_;
 	
 	my $contigcur=0;
@@ -200,7 +353,8 @@ sub ContigIsNext {
 		$contigidx2=$contigcur if(defined $self -> { 'loc2'} -> {'CHROM'} && $self -> { 'loc2'} -> {'CHROM'} eq $contig);
 		$contigcur++;
 	}
-	return 1 if($contigidx1 <= $contigidx2 );
+	warn "############ $contigidx1 > $contigidx2";
+	return 1 if($contigidx1 > $contigidx2 );
 
 	return 0;
 }
@@ -215,12 +369,24 @@ sub ChromPosIsEq {
 }
 
 sub ChromPosIsNext  {
+	#checks if loc1 > loc2
 	my $self; %{$self} = @_;
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
 	if(defined( $self -> { 'loc2'})&& defined( $self -> { 'loc2'} -> {'CHROM'}) && ($self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && 
-			$self -> { 'loc1'} -> {'POS'} >= $self -> { 'loc2'} -> {'POS'}) || 
-		ContigIsNext('loc1'=> $self -> { 'loc1'},'loc2' => $self -> { 'loc2'}, 'vcf' => $self -> {'vcf'}) ){
-		warn 1;
+			$self -> { 'loc1'} -> {'POS'} > $self -> { 'loc2'} -> {'POS'}) || 
+		($self -> { 'loc1'} -> {'CHROM'} ne $self -> { 'loc2'} -> {'CHROM'} && ContigIsNext('loc1'=> $self -> { 'loc1'},'loc2' => $self -> { 'loc2'}, 'vcf' => $self -> {'vcf'})) ){
+		warn 'ChromPosIsNext::ret='.1;
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
+sub ChromPosIsNextOrEqual  {
+	my $self; %{$self} = @_;
+	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
+	if(ChromPosIsNext(%{$self}) || ChromPosIsEq(%{$self})){
+		warn 'ChromPosIsNext::ret='.1;
 		return 1;
 	}else{
 		return 0;
