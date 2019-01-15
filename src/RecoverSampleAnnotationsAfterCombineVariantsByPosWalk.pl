@@ -37,9 +37,13 @@ sub main{
 	my $walkdata;
 	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
 	while(WalkToNext('walk'=> $walkdata)){
-		Dumper($walkdata);
+		#die Dumper($walkdata)."here"
+		$walkdata = AnnotateTargetRecords('walk'=> $walkdata);
+		print FormatWalkTargetLineAsVcfLine('walk'=> $walkdata);
 	}
 	print "Last\n";
-	_formatwalkasvcflineswithfile('walk' => $walkdata);
+	AnnotateTargetRecords('walk'=> $walkdata);
+	print FormatWalkTargetLineAsVcfLine('walk'=> $walkdata);
+	print _formatwalkasvcflineswithfile('walk' => $walkdata);
 	#TargetVcfReAnnotator('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
 }

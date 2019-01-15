@@ -29,6 +29,8 @@ our @EXPORT = qw(
 	WalkToTarget
 	NewWalk
 	WalkToNext
+	AnnotateTargetRecords
+	FormatWalkTargetLineAsVcfLine
 	_formatwalkasvcflineswithfile
 );
 
@@ -118,27 +120,129 @@ sub WalkToNext {
 	}
 	return 1;
 }
+
+sub AnnotateTargetRecords {
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['walk']);
+	my $walk = $self -> {'walk'};
+	my $annotated;
+	#die Dumper($self -> {'record'}).  "  ";
+	for my $target ($walk -> {'targetvcf' }){
+		for my $targetrecord (@{$target -> {'buffer' } -> {'current'}}){
+			for my $vcf (@{$walk -> {'vcfs' }}){
+				for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
+					#die Dumper($self -> {'record'}).  "  ";
+					next if(not(VariantIsEq('loc1' => $targetrecord, 'loc2' => $record)));
+					
+					#annotate
+					#$walk -> {'targetvcf' }  -> {'buffer' } -> {'current'} = 
+					$targetrecord = AnnotateVariant('targetvcfhandle' => $walk -> {'targetvcf' } -> {'handle'},'targetrecord' => $targetrecord, 'record' => $record);
+					$annotated -> { $vcf -> {'file'} }++; 
+				}	
+			}
+			#Dumper($record);
+			#next if not(scalar(keys(%{$record})));
+			#$out .= $vcf -> {'file' } . ":\tcurr:\t" .
+			#	$vcf -> {'handle' } -> format_line($record);
+		}
+	}
+	return $walk;
+}
+
+sub AnnotateVariant {
+	my $self ;%{$self}= @_;
+	SelfRequire(%{$self},'req'=> ['targetrecord','targetvcfhandle','record']);
+	#die Dumper($self -> {'record'}).  "  ";
+	for my $sample (keys(%{$self -> {'targetrecord'} -> {'gtypes'}})){
+		
+		if(defined($self -> {'record'} -> {'gtypes'} -> {$sample})){
+			#die Dumper($self -> {'record'})."object dump" ;
+			for my $infofield (keys(%{$self -> {'record'} ->  {'INFO'}})){
+				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield})|| $self -> {'targetrecord'} -> {'INFO'} -> {$infofield} eq '.'){
+					$self -> {'targetrecord'} -> {'INFO'} -> {$infofield} = $self -> {'record'} -> {'INFO'} -> {$infofield};
+				}
+				
+			}			
+			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample}})){
+				if($formatfield eq 'GT' && 
+					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
+					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> $formatfield} eq './.') ){
+					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} ->  {'gtypes'} -> {$sample} -> {$formatfield};
+				}
+				if( not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ){
+					$self -> {'targetvcfhandle'} -> add_format_field($self -> {'targetrecord'},$formatfield);
+					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield};
+					#$vcf->add_format_field($x,'FOO');
+				}
+			}
+		}
+	}
+	return $self -> {'targetrecord'};
+}
+
+
 sub _formatwalkasvcflineswithfile {
+	#Quick dump of walk data for debugging;
 	my $self ;%{$self}= @_ ;
 	SelfRequire(%{$self},'req'=> ['walk']);
 	my $walk = $self -> {'walk'};
 	#$vcf->format_line($x);
-	print '<-----'."\n"; 
+	my $out;	
+	$out .= '<-----'."\n"; 
 	for my $vcf ($walk -> {'targetvcf' },@{$walk -> {'vcfs' }}){
 		for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
 			#Dumper($record);
 			next if not(scalar(keys(%{$record})));
-			print $vcf -> {'file' } . ":\tcurr:\t" .
+			$out .= $vcf -> {'file' } . ":\tcurr:\t" .
 				$vcf -> {'handle' } -> format_line($record);
 		}
 		for my $record (@{$vcf -> {'buffer' } -> {'next'}}){
 			next if not(scalar(keys(%{$record})));
-			print $vcf -> {'file' } . ":\tnext:\t" .
+			$out .= $vcf -> {'file' } . ":\tnext:\t" .
 				$vcf -> {'handle' } -> format_line($record);
 		}
 	}
-	print '----->'."\n";
+	$out .= '----->'."\n";
+	
+	return $out;
+	
 }
+
+sub FormatWalkTargetLineAsVcfLine {
+	#Output Target vcf data;
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['walk']);
+	my $walk = $self -> {'walk'};
+	#$vcf->format_line($x);
+	my $out;	
+	#$out .= '<-----'."\n"; 
+	for my $vcf ($walk -> {'targetvcf' }){
+		for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
+			#Dumper($record);
+			next if not(scalar(keys(%{$record})));
+			$out .= $vcf -> {'handle' } -> format_line($record);
+		}
+	}
+	#$out .= '----->'."\n";
+	
+	return $out;
+	
+}
+sub FormatWalkTargetLineAsVcfHeader {
+	#Output Target vcf header;
+	
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['walk']);
+	my $walk = $self -> {'walk'};
+		my $out;	
+	
+	$out .= $walk -> {'targetvcf' } -> {'handle' } -> format_header();
+	
+	
+	return $out;
+	
+}
+
 sub SyncVcfToTarget{
 	my $self ;%{$self}= @_ ;
 	#@{$self -> {'vcflist'}}=($self -> {'targetvcf'});
@@ -364,6 +468,26 @@ sub ChromPosIsEq {
 	if(defined($self -> { 'loc2'})&& $self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && $self -> { 'loc1'} -> {'POS'} eq $self -> { 'loc2'} -> {'POS'}){
 		return 1;
 	}else{
+		return 0;
+	}
+}
+
+sub VariantIsEq {
+	my $self;%{$self} = @_;
+	#aka chrom pos ref alt is equal
+	if(ChromPosIsEq(%{$self}) && $self -> { 'loc1'} -> {'REF'} eq $self -> { 'loc2'} -> {'REF'} && scalar@{$self -> { 'loc1'} -> {'ALT'}} == scalar @{$self -> { 'loc2'} -> {'ALT'}}){
+		my $alteq = 1;
+		my $altidx = 0;
+		while($alteq == 1 && $altidx < scalar(@{$self -> { 'loc1'} -> {'ALT'}}) ){
+			#Check if alts are equal
+			$alteq = 0 if $self -> { 'loc1'} -> {'ALT'} -> [$altidx] ne $self -> { 'loc2'} -> {'ALT'} -> [$altidx];
+			#if($annotated == 1){
+			#	return 1;
+			#}
+			$altidx++;
+		}
+		return $alteq;
+	}else {
 		return 0;
 	}
 }
