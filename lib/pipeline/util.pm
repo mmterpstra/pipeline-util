@@ -158,15 +158,15 @@ sub AnnotateVariant {
 		if(defined($self -> {'record'} -> {'gtypes'} -> {$sample})){
 			#die Dumper($self -> {'record'})."object dump" ;
 			for my $infofield (keys(%{$self -> {'record'} ->  {'INFO'}})){
-				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield})|| $self -> {'targetrecord'} -> {'INFO'} -> {$infofield} eq '.'){
+				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield}) || $self -> {'targetrecord'} -> {'INFO'} -> {$infofield} eq '.'){
 					$self -> {'targetrecord'} -> {'INFO'} -> {$infofield} = $self -> {'record'} -> {'INFO'} -> {$infofield};
 				}
 				
 			}			
-			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample}})){
+			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })){
 				if($formatfield eq 'GT' && 
 					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
-					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> $formatfield} eq './.') ){
+					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq './.') ){
 					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} ->  {'gtypes'} -> {$sample} -> {$formatfield};
 				}
 				if( not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ){
