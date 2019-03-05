@@ -164,7 +164,7 @@ sub AnnotateVariant {
 				
 			}			
 			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })){
-				if($formatfield eq 'GT' && 
+				if(defined($formatfield) && $formatfield eq 'GT' && 
 					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
 					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq './.') ){
 					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} ->  {'gtypes'} -> {$sample} -> {$formatfield};
