@@ -36,6 +36,7 @@ sub main{
 	warn Dumper({'targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}}});
 	my $walkdata;
 	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
+	print FormatWalkTargetLineAsVcfHeader('walk' =>  $walkdata);
 	while(WalkToNext('walk'=> $walkdata)){
 		#die Dumper($walkdata)."here"
 		$walkdata = AnnotateTargetRecords('walk'=> $walkdata);
@@ -44,6 +45,6 @@ sub main{
 	print "Last\n";
 	AnnotateTargetRecords('walk'=> $walkdata);
 	print FormatWalkTargetLineAsVcfLine('walk'=> $walkdata);
-	print _formatwalkasvcflineswithfile('walk' => $walkdata);
+	warn _formatwalkasvcflineswithfile('walk' => $walkdata);
 	#TargetVcfReAnnotator('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
 }

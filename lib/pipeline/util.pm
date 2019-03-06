@@ -31,10 +31,11 @@ our @EXPORT = qw(
 	WalkToNext
 	AnnotateTargetRecords
 	FormatWalkTargetLineAsVcfLine
+	FormatWalkTargetLineAsVcfHeader
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.8";
+our $VERSION = "0.8.9";
 
 
 # Preloaded methods go here.
@@ -164,6 +165,8 @@ sub AnnotateVariant {
 				
 			}			
 			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })){
+				#warn Dumper(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} }))." ";
+
 				if(defined($formatfield) && $formatfield eq 'GT' && 
 					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
 					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq './.') ){
@@ -188,7 +191,7 @@ sub _formatwalkasvcflineswithfile {
 	my $walk = $self -> {'walk'};
 	#$vcf->format_line($x);
 	my $out;	
-	$out .= '<-----'."\n"; 
+	$out .= '<--------'."\n"; 
 	for my $vcf ($walk -> {'targetvcf' },@{$walk -> {'vcfs' }}){
 		for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
 			#Dumper($record);
@@ -202,7 +205,7 @@ sub _formatwalkasvcflineswithfile {
 				$vcf -> {'handle' } -> format_line($record);
 		}
 	}
-	$out .= '----->'."\n";
+	$out .= '-------->'."\n ";
 	
 	return $out;
 	
@@ -226,7 +229,6 @@ sub FormatWalkTargetLineAsVcfLine {
 	#$out .= '----->'."\n";
 	
 	return $out;
-	
 }
 sub FormatWalkTargetLineAsVcfHeader {
 	#Output Target vcf header;
@@ -255,9 +257,9 @@ sub SyncVcfToTarget{
 		#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
 		
 		#Goes till
-		if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])) || ChromPosIsNext('loc2' => $self -> {'pos'}, 'loc1' => $self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0], 'vcf' => $self -> {'vcf'} -> {'handle'})){
+		if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])) || ChromPosIsNext('loc2' => {$self -> {'CHROM'},$self -> {'POS'}}, 'loc1' => $self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0], 'vcf' => $self -> {'vcf'} -> {'handle'})){
 			
-			warn Dumper({'CHROM' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'CHROM'},'POS' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'POS'}});
+			warn Dumper({'CHROM' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'CHROM'},'POS' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'POS'}})." ";
 			
 			$continue = 0;
 			
@@ -302,7 +304,7 @@ sub WalkToTarget{
 		#Goes till
 		if(ChromPosIsNext('loc2' => $self -> {'pos'}, 'loc1' => $targetposbuffer -> {'next'} -> [0], 'vcf' => $targetvcf)){
 			
-			warn Dumper({'CHROM' => $targetposbuffer -> {'current'} -> [0] -> {'CHROM'},'POS' => $targetposbuffer -> {'current'} -> [0] -> {'POS'}});
+			warn Dumper({'CHROM' => $targetposbuffer -> {'current'} -> [0] -> {'CHROM'},'POS' => $targetposbuffer -> {'current'} -> [0] -> {'POS'}}) . "  ";
 			
 			$continue = 0;
 			
@@ -465,7 +467,11 @@ sub ContigIsNext {
 
 sub ChromPosIsEq {
 	my $self;%{$self} = @_;
-	if(defined($self -> { 'loc2'})&& $self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && $self -> { 'loc1'} -> {'POS'} eq $self -> { 'loc2'} -> {'POS'}){
+	warn Dumper({'loc1' =>  GetLoc($self -> {'loc1'}), 'loc2' => GetLoc($self -> {'loc2'})}). " ";
+	if(defined($self -> { 'loc2'}) &&
+		defined($self -> { 'loc2'} -> {'CHROM'}) &&
+		$self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && 
+		$self -> { 'loc1'} -> {'POS'} eq $self -> { 'loc2'} -> {'POS'}){
 		return 1;
 	}else{
 		return 0;
@@ -519,6 +525,13 @@ sub ChromPosIsNextOrEqual  {
 sub LocGetChromPosAsString{
 	my $self; %{$self} = @_;
 	return $self -> {'loc'} -> {'CHROM'}.":".$self -> {'loc'} -> {'POS'};
+}
+
+sub GetLoc {
+	my $self; $self = shift @_;
+	my $loc;%{$loc} =  ('CHROM' => $self -> {'CHROM'},
+		'POS' => $self -> {'POS'});
+	return $loc;
 }
 1;
 __END__
