@@ -144,7 +144,7 @@ sub AnnotateTargetRecords {
 			#Dumper($record);
 			#next if not(scalar(keys(%{$record})));
 			#$out .= $vcf -> {'file' } . ":\tcurr:\t" .
-			#	$vcf -> {'handle' } -> format_line($record);
+			#	$vcf -> {'handle'} -> format_line($record);
 		}
 	}
 	return $walk;
@@ -159,20 +159,23 @@ sub AnnotateVariant {
 		if(defined($self -> {'record'} -> {'gtypes'} -> {$sample})){
 			#die Dumper($self -> {'record'})."object dump" ;
 			for my $infofield (keys(%{$self -> {'record'} ->  {'INFO'}})){
-				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield}) || $self -> {'targetrecord'} -> {'INFO'} -> {$infofield} eq '.'){
+				#second part needs to be either . or .(,.)* so to make it fast substr($text,0,1) eq '.'
+				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield}) || substr($self -> {'targetrecord'} -> {'INFO'} -> {$infofield},0,1) eq '.'){
 					$self -> {'targetrecord'} -> {'INFO'} -> {$infofield} = $self -> {'record'} -> {'INFO'} -> {$infofield};
 				}
 				
-			}			
+			}
+			#warn Dumper(sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })))." ################################################################################################# ";
 			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })){
-				#warn Dumper(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} }))." ";
+
 
 				if(defined($formatfield) && $formatfield eq 'GT' && 
 					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
 					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq './.') ){
 					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} ->  {'gtypes'} -> {$sample} -> {$formatfield};
 				}
-				if( not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ){
+				#second part needs to be either . or .(,.)* so to make it fast substr($text,0,1) eq '.'
+				if( (not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || substr($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) eq '.') && defined($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield}) && substr($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) ne '.'){
 					$self -> {'targetvcfhandle'} -> add_format_field($self -> {'targetrecord'},$formatfield);
 					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield};
 					#$vcf->add_format_field($x,'FOO');
@@ -194,7 +197,7 @@ sub _formatwalkasvcflineswithfile {
 	$out .= '<--------'."\n"; 
 	for my $vcf ($walk -> {'targetvcf' },@{$walk -> {'vcfs' }}){
 		for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
-			#Dumper($record);
+			#die Dumper($record);
 			next if not(scalar(keys(%{$record})));
 			$out .= $vcf -> {'file' } . ":\tcurr:\t" .
 				$vcf -> {'handle' } -> format_line($record);
@@ -247,24 +250,28 @@ sub FormatWalkTargetLineAsVcfHeader {
 
 sub SyncVcfToTarget{
 	my $self ;%{$self}= @_ ;
+	
 	#@{$self -> {'vcflist'}}=($self -> {'targetvcf'});
 #	SelfRequire(%{$self},'req'=> ['walk']);
 	SelfRequire(%{$self},'req'=> ['vcf','pos']);	
 	#my $walk = $self -> {'walk'};
 	my $continue = 1;
-	while ($continue == 1 && ($self -> {'vcf' } -> {'buffer'} = GetBufferedPosNext('vcf' =>$self -> {'vcf' } -> {'handle'},'buffer' => $self -> {'vcf' } -> {'buffer'}))){
-		
-		#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
-		
-		#Goes till
-		if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])) || ChromPosIsNext('loc2' => {$self -> {'CHROM'},$self -> {'POS'}}, 'loc1' => $self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0], 'vcf' => $self -> {'vcf'} -> {'handle'})){
+	return if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])));
+	if(not(ChromPosIsNext('curr' => GetLoc($self -> {'pos'}), 'next' => GetLoc($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])))){
+		while (($continue == 1) && ($self -> {'vcf' } -> {'buffer'} = GetBufferedPosNext('vcf' =>$self -> {'vcf' } -> {'handle'},'buffer' => $self -> {'vcf' } -> {'buffer'}))){
 			
-			warn Dumper({'CHROM' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'CHROM'},'POS' => $self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0] -> {'POS'}})." ";
+			#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
 			
-			$continue = 0;
+			#Goes till
+			if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])) || ChromPosIsNext('curr' => GetLoc($self -> {'pos'}), 'next' => GetLoc($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0]), 'vcf' => $self -> {'vcf'} -> {'handle'})){
+				
+				warn LocGetChromPosAsString(loc => GetLoc($self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0]))." ";
+				
+				$continue = 0;
+				
+			}
 			
 		}
-		
 	}
 	#if( scalar(keys %{$self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0]})){
 	#	warn "Current ".Dumper(GetLoc(%{$self -> {'vcf'} -> {'buffer'} -> {'current'} -> [0]})). " ";
@@ -302,7 +309,7 @@ sub WalkToTarget{
 		#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
 		
 		#Goes till
-		if(ChromPosIsNext('loc2' => $self -> {'pos'}, 'loc1' => $targetposbuffer -> {'next'} -> [0], 'vcf' => $targetvcf)){
+		if(ChromPosIsNextOrEqual('curr' => $self -> {'pos'}, 'next' => $targetposbuffer -> {'next'} -> [0], 'vcf' => $targetvcf)){
 			
 			warn Dumper({'CHROM' => $targetposbuffer -> {'current'} -> [0] -> {'CHROM'},'POS' => $targetposbuffer -> {'current'} -> [0] -> {'POS'}}) . "  ";
 			
@@ -323,12 +330,6 @@ sub SelfRequire {
         for my $tag (@{$reqs}){
                 defined($self -> {$tag}) or confess "no requirement '$tag' as input";
         }
-}
-sub GetLoc {
-	my $self;
-        %{$self}=@_ or  confess "input not parseable as hash:".Dumper(@_). ' ';
-
-	return {'CHROM' => $self -> {'CHROM'},'POS' => $self -> {'POS'}};
 }
 sub GetBufferedPosNext {
 	my $self; %{$self}=@_;
@@ -377,7 +378,7 @@ sub PosBufferBufferCleanUp {
 		$self -> {'buffer'} -> {'next'} -> [0] -> {'CHROM'} eq $self -> {'buffer'} -> {'current'} -> [0] ->  {'CHROM'}){
 		#warn 'Grow';
 		#grow array
-		push(@{$self -> {'buffer'} -> {'current'}},%{$self -> {'buffer'} -> {'next'}});
+		push(@{$self -> {'buffer'} -> {'current'}},@{$self -> {'buffer'} -> {'next'}});
 		$self -> {'buffer'} -> {'next'} = [];
 	}else{
 		#chrom / pos not the same so dump as warning
@@ -450,28 +451,29 @@ sub GetContigsAsArray {
 sub ContigIsNext {
 	#checks if 
 	my $self ;%{$self} = @_;
-	
+	SelfRequire(%{$self},'req'=> ['curr','next']);
 	my $contigcur=0;
-	my $contigidx1=-1;my $contigidx2=-0.5;
+	my $contigidxcurr=0;my $contigidxnext=0;
 	#warn Dumper($self -> { 'vcf'}). ' ' if($. > 300);
 	for my $contig (GetContigsAsArray('vcf' => $self -> { 'vcf'})){
-		$contigidx1=$contigcur if(defined $self -> { 'loc1'} -> {'CHROM'} && $self -> { 'loc1'} -> {'CHROM'} eq $contig);
-		$contigidx2=$contigcur if(defined $self -> { 'loc2'} -> {'CHROM'} && $self -> { 'loc2'} -> {'CHROM'} eq $contig);
+		$contigidxcurr=$contigcur if(defined $self -> { 'curr'} -> {'CHROM'} && $self -> { 'loc1'} -> {'CHROM'} eq $contig);
+		$contigidxnext=$contigcur if(defined $self -> { 'next'} -> {'CHROM'} && $self -> { 'loc2'} -> {'CHROM'} eq $contig);
 		$contigcur++;
 	}
-	warn "############ $contigidx1 > $contigidx2";
-	return 1 if($contigidx1 > $contigidx2 );
+	warn "############ $contigidxcurr > $contigidxnext";
+	return 1 if($contigidxcurr < $contigidxnext );
 
 	return 0;
 }
 
 sub ChromPosIsEq {
 	my $self;%{$self} = @_;
-	warn Dumper({'loc1' =>  GetLoc($self -> {'loc1'}), 'loc2' => GetLoc($self -> {'loc2'})}). " ";
+	warn "loc1\t".LocGetChromPosAsString('loc' => GetLoc($self -> {'loc1'}))."\tloc2\t". LocGetChromPosAsString('loc' => GetLoc($self -> {'loc2'})). " ";
 	if(defined($self -> { 'loc2'}) &&
 		defined($self -> { 'loc2'} -> {'CHROM'}) &&
 		$self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && 
 		$self -> { 'loc1'} -> {'POS'} eq $self -> { 'loc2'} -> {'POS'}){
+		warn "###\n######IsEq";
 		return 1;
 	}else{
 		return 0;
@@ -501,11 +503,12 @@ sub VariantIsEq {
 sub ChromPosIsNext  {
 	#checks if loc1 > loc2
 	my $self; %{$self} = @_;
+	SelfRequire(%{$self},'req'=> ['curr','next']);
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
-	if(defined( $self -> { 'loc2'})&& defined( $self -> { 'loc2'} -> {'CHROM'}) && ($self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && 
-			$self -> { 'loc1'} -> {'POS'} > $self -> { 'loc2'} -> {'POS'}) || 
-		($self -> { 'loc1'} -> {'CHROM'} ne $self -> { 'loc2'} -> {'CHROM'} && ContigIsNext('loc1'=> $self -> { 'loc1'},'loc2' => $self -> { 'loc2'}, 'vcf' => $self -> {'vcf'})) ){
-		warn 'ChromPosIsNext::ret='.1;
+	if(defined( $self -> { 'next'})&& defined( $self -> { 'next'} -> {'CHROM'}) && ($self -> { 'curr'} -> {'CHROM'} eq $self -> { 'next'} -> {'CHROM'} && 
+			$self -> { 'curr'} -> {'POS'} < $self -> { 'next'} -> {'POS'}) || 
+		($self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext('curr'=> $self -> { 'loc1'},'next' => $self -> { 'loc2'}, 'vcf' => $self -> {'vcf'})) ){
+		warn '###########ChromPosIsNext::ret='.1;
 		return 1;
 	}else{
 		return 0;
@@ -514,6 +517,7 @@ sub ChromPosIsNext  {
 
 sub ChromPosIsNextOrEqual  {
 	my $self; %{$self} = @_;
+	SelfRequire(%{$self},'req'=> ['curr','next']);
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
 	if(ChromPosIsNext(%{$self}) || ChromPosIsEq(%{$self})){
 		warn 'ChromPosIsNext::ret='.1;
@@ -526,9 +530,14 @@ sub LocGetChromPosAsString{
 	my $self; %{$self} = @_;
 	return $self -> {'loc'} -> {'CHROM'}.":".$self -> {'loc'} -> {'POS'};
 }
-
+#sub GetLoc {
+#	my $self;
+#       %{$self}=@_ or  confess "input not parseable as hash:".Dumper(@_). ' ';
+#
+#	return {'CHROM' => $self -> {'CHROM'},'POS' => $self -> {'POS'}};
+#}
 sub GetLoc {
-	my $self; $self = shift @_;
+	my $self; $self = shift @_ or  confess "input not parseable as hash:".Dumper(@_). ' ';
 	my $loc;%{$loc} =  ('CHROM' => $self -> {'CHROM'},
 		'POS' => $self -> {'POS'});
 	return $loc;

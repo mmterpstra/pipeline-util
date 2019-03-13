@@ -60,7 +60,7 @@ sub main{
 		if(SampleInfoUnannotated($x)){
 			my @vcfline = split("\t",$vcf->format_line($x));
 			 $vcfline[6] = "PASS";
-			print {$vcfcomplexout} join("\t", @vcfline) if(AnnotateSampleInfo($x, $resource) == 0);
+			print {$vcfcomplexout} join("\t", @vcfline) if(AnnotateSampleInfo($x, $resource,$vcf) == 0);
 		}
 		print {$out} $vcf->format_line($x);
 		#die Dumper $x;
@@ -318,7 +318,7 @@ sub SampleInfoUnannotated {
 sub AnnotateSampleInfo {
 	my $record = shift @_;
 	my $resource = shift @_;
-	
+	my $recordhandle = shift @_;
 	#@{$resource -> {'idxvcfs'}}
 	#$idxvcf->open('region' => $record -> {'CHROM'}.':'.$record -> {'POS'}.'-'.$record -> {'POS'} ); #$vcf->open(region=>'1:12345-92345')
 	my $annotated = 0;
@@ -350,8 +350,9 @@ sub AnnotateSampleInfo {
 									 $record -> {'gtypes'} -> {$sample} -> {$field} eq './.') ){
 									$record -> {'gtypes'} -> {$sample} -> {$field} = $x -> {'gtypes'} -> {$sample} -> {$field};
 								}
-								if( not( defined($record -> {'gtypes'} -> {$sample} -> {$field})) || $record -> {'gtypes'} -> {$sample} -> {$field} eq '.' ){
+								if( not( defined($record -> {'gtypes'} -> {$sample} -> {$field})) || substr($record -> {'gtypes'} -> {$sample} -> {$field},0,1) eq '.' ){
 									$record -> {'gtypes'} -> {$sample} -> {$field} = $x -> {'gtypes'} -> {$sample} -> {$field};
+									$recordhandle -> add_format_field($record,$field);
 								}
 			                		}
 						}
@@ -361,6 +362,8 @@ sub AnnotateSampleInfo {
 				}
 			}
 		}
+		##$idxvcf should be closed although not really worrying;
+		#close();
 	}
 	#classify as complex or not
 	if(not($annotated == 1)){

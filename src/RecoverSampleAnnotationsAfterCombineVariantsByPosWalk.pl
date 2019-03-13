@@ -42,7 +42,7 @@ sub main{
 		$walkdata = AnnotateTargetRecords('walk'=> $walkdata);
 		print FormatWalkTargetLineAsVcfLine('walk'=> $walkdata);
 	}
-	print "Last\n";
+	#print "Last\n";
 	AnnotateTargetRecords('walk'=> $walkdata);
 	print FormatWalkTargetLineAsVcfLine('walk'=> $walkdata);
 	warn _formatwalkasvcflineswithfile('walk' => $walkdata);
