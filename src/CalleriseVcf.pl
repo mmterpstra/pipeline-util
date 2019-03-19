@@ -77,6 +77,13 @@ sub CalleriseFormatHeader {
         %{$self}= @_;
         my $vcf = $self -> {'vcf'} or die "no vcf object as input";
         my $caller = $self -> {'caller'} or die "no caller string as input";
+	
+	$vcf -> add_header_line({'key' => 'FORMAT',
+		'ID' => $caller.'ALT',
+		'Number' => '.',
+		'Type' => 'String' ,
+		'Description' => 'All the ALT genotypes as in the ALT field used for tracking downstream annotations'});
+	
        	for my $field (keys(%{$vcf -> {header} -> {FORMAT}})){
                 $vcf -> add_header_line({'key' => 'FORMAT',
                         'ID' => $caller.$field,
@@ -106,6 +113,7 @@ sub CalleriseRecordFormatData {
 		push(@callerisedFormatFields,$caller.$field);
         }
 	push(@{$record -> {'FORMAT'}},@callerisedFormatFields);
+	push(@{$record -> {'FORMAT'}},$caller.'ALT');
 	
 	for my $sample (keys(%{$record -> {'gtypes'}})){
 		for my $field (keys(%{$record -> {'gtypes'} -> {$sample}})){
@@ -113,7 +121,7 @@ sub CalleriseRecordFormatData {
 			next if($field eq 'GT' && ($record -> {'gtypes'} -> {$sample} -> {$field} eq './.'));
 			$record -> {'gtypes'} -> {$sample} -> {$caller.$field} = $record -> {'gtypes'} -> {$sample} -> {$field};
 		}
-
+		$record -> {'gtypes'} -> {$sample} -> {$caller.'ALT'} = join(',',@{$record -> {'ALT'}});
 	}
 }
 

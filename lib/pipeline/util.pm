@@ -348,8 +348,10 @@ sub GetBufferedPosNext {
 	my $x;
 	#warn "next amount ".scalar(@{$self -> {'buffer'} -> {'next'}})." ";
 	while( scalar(@{$self -> {'buffer'} -> {'next'}}) == 0 and my $x=$targetvcf -> next_data_hash()){
+	#while( scalar(@{$self -> {'buffer'} -> {'next'}}) == 0 and defined($x)){
+	#	$x=$targetvcf -> next_data_hash();
 		#warn '## VC ## '. Dumper($x). ' ';
-		$self -> {'buffer'} -> {'next'} = [$x];
+		push(@{$self -> {'buffer'} -> {'next'}},$x);
 		$self -> {'buffer'} = PosBufferBufferCleanUp('buffer' => $self -> {'buffer'});
 
 	}
@@ -507,7 +509,7 @@ sub ChromPosIsNext  {
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
 	if(defined( $self -> { 'next'})&& defined( $self -> { 'next'} -> {'CHROM'}) && ($self -> { 'curr'} -> {'CHROM'} eq $self -> { 'next'} -> {'CHROM'} && 
 			$self -> { 'curr'} -> {'POS'} < $self -> { 'next'} -> {'POS'}) || 
-		($self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext('curr'=> $self -> { 'loc1'},'next' => $self -> { 'loc2'}, 'vcf' => $self -> {'vcf'})) ){
+		($self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext('curr'=> $self -> { 'curr'},'next' => $self -> { 'next'}, 'vcf' => $self -> {'vcf'})) ){
 		warn '###########ChromPosIsNext::ret='.1;
 		return 1;
 	}else{
