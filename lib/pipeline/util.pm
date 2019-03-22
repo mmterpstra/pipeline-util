@@ -158,7 +158,7 @@ sub AnnotateVariant {
 		
 		if(defined($self -> {'record'} -> {'gtypes'} -> {$sample})){
 			#die Dumper($self -> {'record'})."object dump" ;
-			for my $infofield (keys(%{$self -> {'record'} ->  {'INFO'}})){
+			for my $infofield (sort(keys(%{$self -> {'record'} ->  {'INFO'}}))){
 				#second part needs to be either . or .(,.)* so to make it fast substr($text,0,1) eq '.'
 				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield}) || substr($self -> {'targetrecord'} -> {'INFO'} -> {$infofield},0,1) eq '.'){
 					$self -> {'targetrecord'} -> {'INFO'} -> {$infofield} = $self -> {'record'} -> {'INFO'} -> {$infofield};
@@ -166,7 +166,7 @@ sub AnnotateVariant {
 				
 			}
 			#warn Dumper(sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })))." ################################################################################################# ";
-			for my $formatfield (keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })){
+			for my $formatfield (sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} }))){
 
 
 				if(defined($formatfield) && $formatfield eq 'GT' && 
@@ -257,7 +257,7 @@ sub SyncVcfToTarget{
 	#my $walk = $self -> {'walk'};
 	my $continue = 1;
 	return if(not(defined($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])));
-	if(not(ChromPosIsNext('curr' => GetLoc($self -> {'pos'}), 'next' => GetLoc($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0])))){
+	if(not(ChromPosIsNext('curr' => GetLoc($self -> {'pos'}), 'next' => GetLoc($self -> {'vcf'} -> {'buffer'} -> {'next'} -> [0]), 'vcf' => $self -> {'vcf' } -> {'handle'}))){
 		while (($continue == 1) && ($self -> {'vcf' } -> {'buffer'} = GetBufferedPosNext('vcf' =>$self -> {'vcf' } -> {'handle'},'buffer' => $self -> {'vcf' } -> {'buffer'}))){
 			
 			#Goes until equal position or greater then position; #not(ChromPosIsNext('loc1' => {'CHROM'=>4,'POS'=>55593536}, 'loc2' => $targetposbuffer -> {'current'} -> [0], 'vcf' => $targetvcf))
@@ -436,6 +436,7 @@ sub LinePosLastHandleLogger {
 
 sub GetContigsAsArray {
 	my $self; %{$self} = @_;
+	SelfRequire(%{$self},'req'=> ['vcf']);
 	my @contigs;
 	#confess "ERROR Undefinded" .Dumper($self -> {'vcf'});
 	my $vcf = $self -> {'vcf'} or confess "ERROR Undefinded" .Dumper($self -> {'vcf'});
@@ -453,13 +454,15 @@ sub GetContigsAsArray {
 sub ContigIsNext {
 	#checks if 
 	my $self ;%{$self} = @_;
-	SelfRequire(%{$self},'req'=> ['curr','next']);
+	SelfRequire(%{$self},'req'=> ['curr','next','vcf']);
 	my $contigcur=0;
 	my $contigidxcurr=0;my $contigidxnext=0;
 	#warn Dumper($self -> { 'vcf'}). ' ' if($. > 300);
+	defined($self ->  { 'curr'} -> {'CHROM'}) or confess "no requirement curr CHROM as input";
+	defined($self ->  { 'next'} -> {'CHROM'}) or confess "no requirement next CHROM as input";
 	for my $contig (GetContigsAsArray('vcf' => $self -> { 'vcf'})){
-		$contigidxcurr=$contigcur if(defined $self -> { 'curr'} -> {'CHROM'} && $self -> { 'loc1'} -> {'CHROM'} eq $contig);
-		$contigidxnext=$contigcur if(defined $self -> { 'next'} -> {'CHROM'} && $self -> { 'loc2'} -> {'CHROM'} eq $contig);
+		$contigidxcurr=$contigcur if(defined $self -> { 'curr'} -> {'CHROM'} && $self -> { 'curr'} -> {'CHROM'} eq $contig);
+		$contigidxnext=$contigcur if(defined $self -> { 'next'} -> {'CHROM'} && $self -> { 'next'} -> {'CHROM'} eq $contig);
 		$contigcur++;
 	}
 	warn "############ $contigidxcurr > $contigidxnext";
@@ -505,11 +508,11 @@ sub VariantIsEq {
 sub ChromPosIsNext  {
 	#checks if loc1 > loc2
 	my $self; %{$self} = @_;
-	SelfRequire(%{$self},'req'=> ['curr','next']);
+	SelfRequire(%{$self},'req'=> ['curr','next','vcf']);
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
 	if(defined( $self -> { 'next'})&& defined( $self -> { 'next'} -> {'CHROM'}) && ($self -> { 'curr'} -> {'CHROM'} eq $self -> { 'next'} -> {'CHROM'} && 
 			$self -> { 'curr'} -> {'POS'} < $self -> { 'next'} -> {'POS'}) || 
-		($self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext('curr'=> $self -> { 'curr'},'next' => $self -> { 'next'}, 'vcf' => $self -> {'vcf'})) ){
+		($self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext(%$self)) ){
 		warn '###########ChromPosIsNext::ret='.1;
 		return 1;
 	}else{
@@ -519,7 +522,7 @@ sub ChromPosIsNext  {
 
 sub ChromPosIsNextOrEqual  {
 	my $self; %{$self} = @_;
-	SelfRequire(%{$self},'req'=> ['curr','next']);
+	SelfRequire(%{$self},'req'=> ['curr','next','vcf']);
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
 	if(ChromPosIsNext(%{$self}) || ChromPosIsEq(%{$self})){
 		warn 'ChromPosIsNext::ret='.1;

@@ -40,7 +40,7 @@ my $exes = [
 ];
 
 
-use Test::More tests => 29;
+use Test::More tests => 30;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
@@ -52,8 +52,10 @@ for my $exe (@{$exes}){
 	ok(system('bash -c "echo > /dev/stderr && set -ex && perl -wc '.$exe.'"') == 0, "$exe syntax test");
 }
 # test bedtrim
-ok(system( 'bash -c "echo > /dev/stderr && set -ex && ' .
+ok(system( 'bash -c "echo > /dev/stderr && set -e && ' .
 	'perl src/trimByBed.pl -s t/data/bedtrim_before.sam  -b t/data/bedtrim_probe.bed -o t/data/bedtrim_test -n t/data/bedtrim_test && ' . 
 	'diff <(samtools view t/data/bedtrim_after.bam ) <(samtools view t/data/bedtrim_test.bam )"' ) == 0, "bedtrim minimal functional test");
 
-
+ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
+	'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl complex.vcf t/data/annot.vcf t/data/annot.call1.vcf t/data/annot.call2.vcf 2>/dev/null) '.
+	' t/data/recov.vcf &>/dev/stderr"') == 0 , 'RecoverSampleAnnotationsAfterCombineVariantsByPosWalk funtional test');
