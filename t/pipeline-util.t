@@ -57,5 +57,5 @@ ok(system( 'bash -c "echo > /dev/stderr && set -e && ' .
 	'diff <(samtools view t/data/bedtrim_after.bam ) <(samtools view t/data/bedtrim_test.bam )"' ) == 0, "bedtrim minimal functional test");
 
 ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
-	'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl complex.vcf t/data/annot.vcf t/data/annot.call1.vcf t/data/annot.call2.vcf 2>/dev/null) '.
+	'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl complex.vcf t/data/annot.vcf t/data/annot.call1.vcf t/data/annot.call2.vcf ) '.
 	' t/data/recov.vcf &>/dev/stderr"') == 0 , 'RecoverSampleAnnotationsAfterCombineVariantsByPosWalk funtional test');
