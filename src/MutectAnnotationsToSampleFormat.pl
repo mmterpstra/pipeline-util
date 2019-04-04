@@ -37,11 +37,12 @@ sub main{
 	$vcf->parse_header();
 	
 	#mutect should only contain single sample so get genotype or die with error
-	my $gt  = GetGenotypeOrDie($vcf);
+	my $gts  = GetGenotypesOrDie($vcf);
 
 	#interpret fields from cmdline
 	my $fields;
 	@{$fields} = split(",",$fieldsCs);
+	warn "selected fields". Dumper($fields)." ";
 	#@{$fields}=("TLOD","NLOD");
 	
 	#Update headers for FORMAT info and also add FT annotation and print header as vcf
@@ -53,7 +54,9 @@ sub main{
 	#iterate file
 	warn localtime(time())." [INFO] $0: Iterating records."; my $records=0;
 	while (my $x=$vcf->next_data_hash()){
-		InfoFieldsToGenotypeFieldsInRecord('record' => $x,'fields' => $fields, 'gt' => $gt, 'vcf' => $vcf);
+		for my $gt (@{$gts}){
+			InfoFieldsToGenotypeFieldsInRecord('record' => $x,'fields' => $fields, 'gt' => $gt, 'vcf' => $vcf);
+		}
 		#die Dumper $x;
 		print {$out} $vcf->format_line($x);
 		#die Dumper $x;
@@ -124,16 +127,18 @@ sub SelfRequire {
 	}
 }
 
-sub GetGenotypeOrDie {
+sub GetGenotypesOrDie {
 	#my $self;
         #%{$self}= @_;
 	my $vcf = shift(@_) or die "no vcf object";
 	my (@samples) = $vcf->get_samples();
 	die "This is not a mutect2 vcf because it contains no samples" if(scalar(@samples) == 0);
-	die "This is not a mutect2 vcf because it contains more than 1 sample" if(scalar(@samples) > 1);
-	my $gt =$samples[0];
+	warn "This is tumor normal vcf because it contains 2 samples" if(scalar(@samples) == 2);
+	warn "This is not a mutect vcf because it contains more than two samples (AKA need to be looked at)." if(scalar(@samples) > 2);
+	
+	my $gts;@{$gts} = @samples;
 	#die Dumper(\@samples)." ";
-	return $gt;
+	return $gts;
 }
 
 sub CalleriseInfoHeader {

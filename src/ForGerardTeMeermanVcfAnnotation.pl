@@ -14,10 +14,12 @@ my $use = <<"END";
 		VCFFile.vcf = unannotated VCF file	
 END
 
-my $Normal = $ARGV[0];
-my $VcfFile = $ARGV[1];
+my $Normal = $ARGV[0] or die "ERROR Specify normal sample\n$!";
 
-open(my $in,'<',$VcfFile)or die "cannot open $VcfFile\n$!";
+my $VcfFile = $ARGV[1] or die "ERROR Specify VCF file\n$!";
+
+
+open(my $in,'<',$VcfFile)or die "ERROR Cannot open vcf: $VcfFile\n$!";
 my $line;
 	
 #general stuff
@@ -45,10 +47,11 @@ my $customINFO = <<"END";
 ##TumorGenotypeScriptCmd="perl $0 $Normal $VcfFile"
 ##INFO=<ID=IsHetrozygousInNormal,Number=0,Type=Flag,Description="Has two different alleles in normal sample (Is hetrogenous)">
 ##INFO=<ID=IsChangeInTumor,Number=0,Type=Flag,Description="Is changed in a tumor sample relative to Normal sample or other Tumor samples">
+##INFO=<ID=NotPolyMorfic,Number=0,Type=Flag,Description="When 2 or more samples with different GT tags it as nonpolymorfic, this is the inverse of IsHetrozygousInNormal but with single calls excluded because of lack of evidence">
 ##INFO=<ID=IsChangeInTumorGQnormal,Number=1,Type=Float,Description="IsChangeInTumor normal GQ max for deciding IsChangeInTumor flag might not always be present.">
 ##INFO=<ID=IsChangeInTumorGQtumor,Number=1,Type=Float,Description="IsChangeInTumor tumor GQ max for deciding IsChangeInTumor flag">
 ##INFO=<ID=IsChangeInTumorGQtumorcritical,Number=0,Type=Flag,Description="Is changed in a tumor sample relative to Normal sample or other Tumor samples">
-##INFO=<ID=Somatic,Number=0,Type=Flag,Description="Is changed in a tumor sample relative to Normal sample, the normal does not contain the tumor variant at an allele frequency of 0.05 and tumor gt is not ref (somewhat conservative)">
+##INFO=<ID=Somatic,Number=0,Type=Flag,Description="Is changed in a tumor sample relative to the other samples, the normal does not contain the tumor variant at an allele frequency of 0.05 and tumor gt is not ref (somewhat conservative)">
 ##INFO=<ID=TeMeermanAlleleBias,Number=1,Type=Float,Description="Allele bias as Specified by Gerard te Meerman '4*sumAD-((maxAD/sumAD)-0.5)**2' (only calculated for Het sites for the specified normal sample => $Normal )">
 ##INFO=<ID=MeanDP,Number=1,Type=Float,Description="Mean of sample depths (meanDP)">
 ##INFO=<ID=MinDP,Number=1,Type=Integer,Description="Minimum of sample depths (meanDP)">
@@ -147,20 +150,24 @@ while($line=<$in>){
 			my @tumorGenotypeIndexes=split('/',$formatInfo{$sampleField}{'GT'});
 			die "Invalid triallelic in normal sample site \n'$line'\n$!" if(scalar(@tumorGenotypeIndexes)>2);#never happens just to check if the BUG doesn't spit out triallelic genotypes like 0/0/1
 			
-			if($formatInfo{$sampleField}{'GT'} ne './.' && join('/',sort(split('/',$formatInfo{$Normal}{'GT'}))) ne join('/',sort(split('/',$formatInfo{$sampleField}{'GT'}))) ){
+			if($formatInfo{$sampleField}{'GT'} ne './.' && 
+				join('/',sort(split('/',$formatInfo{$Normal}{'GT'}))) ne join('/',sort(split('/',$formatInfo{$sampleField}{'GT'}))) ){
 				my @indexesTumor;
 				@indexesTumor=getDifferentIndexesB($formatInfo{$Normal}{'GT'},$formatInfo{$sampleField}{'GT'});
 				#warn "return value of formatInfo.Normal.'AD.indexesTumor':" . join(",",$formatInfo{$Normal}{'ADi'}{@indexesTumor})."\n";
 				
 				$info{"Somatic"} = 'true' if($normalGenotypeIndexes[0] eq $normalGenotypeIndexes[1] && \
+									$formatInfo{$Normal}{'GT'} ne './.' && \
 									$formatInfo{$sampleField}{'GT'} ne '0/0' && \
 									looks_like_number(max($formatInfo{$Normal}{'ADi'}{@indexesTumor})) && \
 									looks_like_number(Sum(split(',',$formatInfo{$Normal}{'AD'}))) && \
 									(max($formatInfo{$Normal}{'ADi'}{@indexesTumor}) == 0 || \
 										max($formatInfo{$Normal}{'ADi'}{@indexesTumor}) / Sum(split(',',$formatInfo{$Normal}{'AD'})) < 0.025  ));
+				
 				$info{"IsChangeInTumor"} = 'true';
 				$info{"IsChangeInTumorGQnormal"} = $formatInfo{$Normal}{'GQ'};
-				$info{"IsChangeInTumorGQtumor"} = $formatInfo{$sampleField}{'GQ'} if(not(defined($info{"IsChangeInTumorGQtumor"}))||$info{"IsChangeInTumorGQtumor"} < $formatInfo{$sampleField}{'GQ'});
+				$info{"IsChangeInTumorGQtumor"} = $formatInfo{$sampleField}{'GQ'} if(not(defined($info{"IsChangeInTumorGQtumor"}))||\
+					$info{"IsChangeInTumorGQtumor"} < $formatInfo{$sampleField}{'GQ'});
 			}
 		}		
 	}else{
@@ -179,6 +186,23 @@ while($line=<$in>){
 				}
 			}
 		}	
+	}
+	
+	my $GTlast = './.';
+	my $GTseen = 0;
+	my $samplelast = '';
+	$info{"NotPolyMorfic"} = 'true';
+	for my $sample (@samples){
+		if($formatInfo{$sample}{'GT'} ne './.'){
+			if($GTlast ne './.' && join('/',sort(split('/',$GTlast))) ne join('/',sort(split('/',$formatInfo{$sample}{'GT'})))){
+				$info{"NotPolyMorfic"} = 'false';
+			}
+			$GTlast = $formatInfo{$sample}{'GT'};
+			$GTseen++;
+		}	
+	}
+	if($GTseen < 2){
+		  $info{"NotPolyMorfic"} = 'false';
 	}
 	####################################################################################################################
 	#zscore calc
