@@ -1,5 +1,5 @@
 name = 'pipeline-util'
-version = '0.8.9.6'
+version = '0.8.10.0'
 
 homepage = 'https://github.com/mmterpstra/pipeline-util'
 description = """pipeline utilities."""
