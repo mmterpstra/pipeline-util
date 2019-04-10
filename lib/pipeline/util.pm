@@ -458,17 +458,17 @@ sub ContigIsNext {
 	my $contigcur=0;
 	my $contigidxcurr=0;my $contigidxnext=0;
 	#warn Dumper($self -> { 'vcf'}). ' ' if($. > 300);
-	defined($self ->  { 'curr'} -> {'CHROM'}) or confess "no requirement curr CHROM as input";
-	defined($self ->  { 'next'} -> {'CHROM'}) or confess "no requirement next CHROM as input";
+	defined($self ->  { 'curr'} -> {'CHROM'}) or confess("No requirement curr CHROM as input" . ' ');
+	defined($self ->  { 'next'} -> {'CHROM'}) or confess("No requirement next CHROM as input" . ' ');
 	for my $contig (GetContigsAsArray('vcf' => $self -> { 'vcf'})){
 		$contigidxcurr=$contigcur if(defined $self -> { 'curr'} -> {'CHROM'} && $self -> { 'curr'} -> {'CHROM'} eq $contig);
 		$contigidxnext=$contigcur if(defined $self -> { 'next'} -> {'CHROM'} && $self -> { 'next'} -> {'CHROM'} eq $contig);
 		$contigcur++;
 	}
-	warn "############ $contigidxcurr > $contigidxnext";
+	#warn "############ $contigidxcurr > $contigidxnext";
 	return 1 if($contigidxcurr < $contigidxnext );
 
-	return 0;
+	return 0;#or should i die here?
 }
 
 sub ChromPosIsEq {
@@ -510,12 +510,16 @@ sub ChromPosIsNext  {
 	my $self; %{$self} = @_;
 	SelfRequire(%{$self},'req'=> ['curr','next','vcf']);
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
-	if(defined( $self -> { 'next'})&& defined( $self -> { 'next'} -> {'CHROM'}) && ($self -> { 'curr'} -> {'CHROM'} eq $self -> { 'next'} -> {'CHROM'} && 
-			$self -> { 'curr'} -> {'POS'} < $self -> { 'next'} -> {'POS'}) || 
-		($self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext(%$self)) ){
-		warn '###########ChromPosIsNext::ret='.1;
+	if((not(defined( $self -> { 'next'} -> {'CHROM'}))|| not(defined( $self -> { 'curr'} -> {'CHROM'})))){
+		return 1;
+	}elsif((($self -> { 'curr'} -> {'CHROM'} eq $self -> { 'next'} -> {'CHROM'} && 
+			$self -> { 'curr'} -> {'POS'} < $self -> { 'next'} -> {'POS'})) || 
+		(defined( $self -> { 'next'}) && defined( $self -> { 'curr'} -> {'CHROM'}) && $self -> { 'curr'} -> {'CHROM'} ne $self -> { 'next'} -> {'CHROM'} && ContigIsNext(%$self)) ){
+		#warn '###########ChromPosIsNext::ret='.1;
+		# next position is next to current posiotion that the files are being synced to so say ok and stop reading this file...
 		return 1;
 	}else{
+		# read on my friend
 		return 0;
 	}
 }
