@@ -4,6 +4,25 @@ use strict;
 use Data::Dumper;
 use Scalar::Util qw(looks_like_number);
 use Carp;
+#use Getopt::ArgParse;
+
+ 
+#my $ap = Getopt::ArgParse->new_parser(
+#	prog        => 'CollectNugeneLandingProbeMetrics.pl ',
+#	description => 'Collects metrics from bam file when trimmed by trimbybed.pl and optionall duplicate marked',
+#	epilog      => 'Examples: samtools view sample.bam | CollectNugeneLandingProbeMetrics.pl > sample.metrics.log',
+#);
+#$ap->add_arg('--bool', '-b', type => 'Bool', dest => 'boo');
+ 
+# Parse an option: '--foo value' or '-f value'
+#$ap->add_arg('--duplicates', '-d', 'required' => 0,'dest' => 'duplicates','help' => "Toggle off filtering for duplicates");
+#my $opts = $parser->parse_args();
+
+
+use Getopt::Std;
+my $opts;
+getopts('d', $opts);
+
 
 main();
 
@@ -14,6 +33,7 @@ sub main{
 		next if(m/^\@/);
 		my $record;
 		$record = DumbReader($_);
+		next if(not($opts->{'d'}) && IsDuplicate($record));
 		$landingProbeMetrics = CollectLandingProbeInfo($landingProbeMetrics,$record);
 	}
 	#purge buffer
@@ -33,13 +53,16 @@ sub CollectLandingProbeInfo {
 	}else{
 		die "poorly formatted sam record???\n".Dumper($r)." ";
 	}
+	if(not(IsSupplementalAlignment($r)) && HasProperReadPair($r)){
+		$landingProbeMetrics -> {'PAIRED'} -> { GetNugeneProbeName($r) } -> { 'count' }++;
+	}
 	return $landingProbeMetrics;
 
 }
 
 sub LandingProbeMetricsAsString {
 	my $landingProbeMetrics = shift @_;
-	my $string = "LandingProbe\tFIRST_IN_PAIR_Count\tSECOND_IN_PAIR_Count\tUNPAIRED_Count\n";
+	my $string = "LandingProbe\tFIRST_IN_PAIR_Count\tSECOND_IN_PAIR_Count\tUNPAIRED_Count\tPAIRED_Count\n";
 	
 	my @lps; 
 	for my $orientation (sort(keys(%{$landingProbeMetrics}))){
@@ -61,7 +84,7 @@ sub LandingProbeMetricsAsString {
 			}
 		}
 	}
-	my @oris = ('FIRST_IN_PAIR','SECOND_IN_PAIR','UNPAIRED');
+	my @oris = ('FIRST_IN_PAIR','SECOND_IN_PAIR','UNPAIRED','PAIRED');
 	#warn "here is the list of probes ".Dumper(\@lps,\@oris);
 	for my $lp (@lps){
 		$string .= "$lp"; 
@@ -159,6 +182,17 @@ sub HasPairedEndTag {
 	}
 
 }
+sub HasProperReadPair {
+	my $r=shift(@_);
+	
+	if((GetFlagRead($r) & 1) && (GetFlagRead($r) & 2)){
+		return 1;
+	}else{
+		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);
+		return 0;
+	}
+
+}
 
 sub IsFirstInPair {
 	my $r=shift(@_);
@@ -174,13 +208,24 @@ sub IsFirstInPair {
 sub IsSecondInPair {
 	my $r=shift(@_);
 
-		if((GetFlagRead($r) & 1 && GetFlagRead($r) & 128)){
+	if((GetFlagRead($r) & 1 && GetFlagRead($r) & 128)){
 		return 1;
 	}else{
 		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);
 		return 0;
 	}
 }
+
+sub IsDuplicate {
+	my $r=shift(@_);
+	if((GetFlagRead($r) & 1024)){
+		return 1;
+	}else{
+		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);
+		return 0;
+	}
+}
+
 
 sub GetFlagRead{
 	my $r=shift(@_);
@@ -222,6 +267,18 @@ sub IsPrimaryAlignment {
 	}else{
 		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);	
 		return 1;
+	}
+}
+
+sub IsSupplementalAlignment {
+	my $r=shift(@_);
+	#warn "test".(GetFlagRead($r) & 2048);
+	if((GetFlagRead($r) & 2048)){
+
+		return 1;
+	}else{
+		#die Dumper($r) or die 'Record does not contain this many fields!'.Dumper($r);
+		return 0;
 	}
 }
 
