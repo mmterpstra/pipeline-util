@@ -4,7 +4,8 @@ perl:
 before_install:
 - sudo apt-get install -qq samtools
 - sudo apt-get install -qq bedtools
-- sudo apt-get install -qq libhts0
+- sudo apt-get install -qq libhts1
+- sudo apt-get install -qq gfortran
 - sudo apt-get install -qq r-base
 - sudo apt-get install -qq tabix
 - sudo apt-get install -qq vcftools
