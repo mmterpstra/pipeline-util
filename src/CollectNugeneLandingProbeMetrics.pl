@@ -73,8 +73,9 @@ sub LandingProbeMetricsAsString {
 			for my $lpseen (@lps){
 				if($lpseen eq $lp){
 					$found = 1;
-					push(@lps,$lp);
-					last;
+					#this code below triplcates the output most of the time
+					#push(@lps,$lp);
+					#last; 
 				}
 				
 				last if($found == 1);

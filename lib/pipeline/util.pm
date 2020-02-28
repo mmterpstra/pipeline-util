@@ -113,7 +113,6 @@ sub WalkToNext {
 	#sync the other vcfs
 	for my $vcf (@{$walk -> {'vcfs'}}){
 		SyncVcfToTarget('vcf' => $vcf,'pos' => $walk -> {'targetvcf' } -> {'buffer'} -> {'current'} -> [0]);
-		
 	}
 	_formatwalkasvcflineswithfile('walk' => $walk);
 	if(not scalar(@{$walk -> {'targetvcf' } -> {'buffer' } -> {'next'}})){
@@ -139,7 +138,7 @@ sub AnnotateTargetRecords {
 					#$walk -> {'targetvcf' }  -> {'buffer' } -> {'current'} = 
 					$targetrecord = AnnotateVariant('targetvcfhandle' => $walk -> {'targetvcf' } -> {'handle'},'targetrecord' => $targetrecord, 'record' => $record);
 					$annotated -> { $vcf -> {'file'} }++; 
-				}	
+				}
 			}
 			#Dumper($record);
 			#next if not(scalar(keys(%{$record})));
@@ -168,14 +167,18 @@ sub AnnotateVariant {
 			#warn Dumper(sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })))." ################################################################################################# ";
 			for my $formatfield (sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} }))){
 
-
+				#This might contain skips if for example the genotype is already present
 				if(defined($formatfield) && $formatfield eq 'GT' && 
 					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
 					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq './.') ){
 					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} ->  {'gtypes'} -> {$sample} -> {$formatfield};
 				}
 				#second part needs to be either . or .(,.)* so to make it fast substr($text,0,1) eq '.'
-				if( (not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || substr($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) eq '.') && defined($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield}) && substr($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) ne '.'){
+				if( (not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || 
+					 substr($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) eq '.') && 
+					 defined($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield}) &&
+					 substr($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) ne '.'){
+					
 					$self -> {'targetvcfhandle'} -> add_format_field($self -> {'targetrecord'},$formatfield);
 					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield};
 					#$vcf->add_format_field($x,'FOO');
