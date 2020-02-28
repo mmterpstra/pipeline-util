@@ -102,7 +102,9 @@ sub GetAnn{
 	if(defined($r->{'INFO'}{'ANN'})){
 		return $r->{'INFO'}{'ANN'};
 	}
-	die "Vcf record doesn't have ANN INFO Field or is strangely annotated!".Dumper($r);
+	#iffy merges need lots of warnings snpeff even shies away from spanning deletions
+	warn "Vcf record doesn't have ANN INFO Field or is strangely annotated!" . Dumper($r) . ' ';
+	return undef;
 }
 sub GetAlt{
 	my $r = shift @_;
@@ -154,11 +156,19 @@ sub GetWorstPredictionsByAllele {
 sub GetWorstAnnByAllele {
 	my $self;
 	%{$self}= @_;
+	
+	#tries to get the first annotation per alle and assumes this is the 
+	# worst effect.  
+	
 	my $r = $self -> {'record'} or die "no record object as input";
 	my $alt = $self -> {'alt'} or die "no alt value as input";
 	my $annotations = $self -> {'ann'} or die "no annotations object value as input";
 	
-	my @anns = split(",",GetAnn($r));
+	my @anns;
+	@anns = split(",",GetAnn($r)) if(defined(GetAnn($r)));
+	my $spanningDeletionAnn = '*'.'|.'  x (scalar(@{$annotations}) - 1);
+	push(@anns,$spanningDeletionAnn);
+
 	
 	my $worstAnn;
 	
