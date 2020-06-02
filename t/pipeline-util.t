@@ -41,7 +41,7 @@ my $exes = [
 ];
 
 
-use Test::More tests => 32;
+use Test::More tests => 33;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
@@ -56,10 +56,13 @@ for my $exe (@{$exes}){
 ok(system( 'bash -c "echo > /dev/stderr && set -e && ' .
 	'perl src/trimByBed.pl -s t/data/bedtrim_before.sam  -b t/data/bedtrim_probe.bed -o t/data/bedtrim_test -n t/data/bedtrim_test && ' . 
 	'diff <(samtools view t/data/bedtrim_after.bam ) <(samtools view t/data/bedtrim_test.bam )"' ) == 0, "bedtrim minimal functional test");
-
+# test RecoverSampleAnnotationsAfterCombineVariantsByPosWalk
 ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
 	'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl complex.vcf t/data/annot.vcf t/data/annot.call1.vcf t/data/annot.call2.vcf ) '.
 	' t/data/recov.vcf &>/dev/stderr"') == 0 , 'RecoverSampleAnnotationsAfterCombineVariantsByPosWalk functional test');
+#multiintersectseg
 ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && mkdir -p tmp && '.
         'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src//multiIntersectSeg.pl test/data/ref.dict  ./tmp/  test/data/multiinstersectseg/*.seg &>/dev/stderr &&  cat tmp/merged.tsv && rm -rv tmp/ &> /dev/stderr ) test/data/multiinstersectseg/merged.tsv  &>/dev/stderr"') == 0 , 'MultiInstersectSeg functional test');
-
+#RenameChromosomes
+ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
+	'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/RenameChromosomes.pl 0 test/data/renamechromosomes/renamechroms.tsv test/data/renamechromosomes/renamechroms.inputbed.bed) test/data/renamechromosomes/renamechroms.outputbed.bed &>/dev/stderr"') == 0 , 'RenameChromosomes functional test');#perl src/RenameChromosomes.pl 0 test/data/renamechromosomes/renamechroms.tsv test/data/renamechromosomes/renamechroms.inputbed.bed > test/data/renamechromosomes/renamechroms.outputbed.bed
