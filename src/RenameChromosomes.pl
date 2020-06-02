@@ -29,7 +29,7 @@ sub main{
 	#                   'line' => '2'
 	#                 }
 	#        };
-	open(my $renamehandle,'<',$renametsv);
+	open(my $renamehandle,'<',$renametsv) or die "cannot read $renametsv. Is the file ok?";
 	while(<$renamehandle>){
 		next if ($_ eq "\n");
 		my $record;
@@ -38,9 +38,11 @@ sub main{
 		#warn Dumper($record,$rename)."";
 	}
 	warn "## INFO ## Reading input file succesful rename info: " . Dumper($rename);
-	
+	close($renamehandle);
 	#process bed
-	open(my $inputhandle,'<',$inputtsv);
+	
+	open(my $inputhandle,'<',$inputtsv) or die "cannot read $inputtsv. Is the file ok?";
+	
 	while(<$inputhandle>){
 		my $record;
 		$record = DumbReader($_);
@@ -58,6 +60,7 @@ sub main{
 			warn "Omitted the following region due to chromosome not present in rename.tsv : '".Dumper($record)."'";
 		}
 	}
+	close($inputhandle);
 }
 
 sub DumbReader{
