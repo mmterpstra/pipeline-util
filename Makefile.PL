@@ -1,4 +1,5 @@
 use 5.020002;
+use Data::Dumper;
 use ExtUtils::MakeMaker;
 
 #How to add a new file
@@ -51,7 +52,7 @@ sub CmdRunner {
 
         warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
 
-        @{$ret} = `($cmd )2>&1`;
+        @{$ret} = `(set -e; set -o pipefail; $cmd )2>&1`;
 	my $exitcode = $?;
         if ($exitcode == -1) {
                 die localtime( time() ). " [ERROR] failed to execute: $!\n";
@@ -66,7 +67,7 @@ sub CmdRunner {
         }else {
                	warn localtime( time() ). " [INFO] " . sprintf "child exited with value %d\n", $exitcode >> 8;
         }
-		return @{$ret};
+	return @{$ret};
 }
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
@@ -75,9 +76,35 @@ sub CmdRunner {
 my @exe_files = glob("src/*.pl");
 push(@exe_files,glob("src/*.Rscript"));
 
+my $pm = 'lib/pipeline/util.pm';
+
+my $git;
+@{$git} = CmdRunner("which git || exit 0");
+warn Dumper(\$git);
+if($git -> [0] =~ m!.*/git!){
+	#git present
+	warn localtime( time() ). " [INFO] git present";
+	my $git_descr;
+	@{$git_descr} = CmdRunner("git describe --tag || exit 0");
+	if($git_descr -> [0] =~ m/\d+\.\d+\.\d+/){ 
+		warn localtime( time() ). " [INFO] in git repo with tag"; 
+		#this likely means were in a repo so we can edit the $VERSION if these arent the same as the github repo
+		my $ver_tag; @{$ver_tag} = CmdRunner("git describe --tags| perl -wpe 's/\n//'");
+		my $ver_pm;@{$ver_pm} = CmdRunner("grep '\$VERSION' $pm | perl -wpe 's/.*=\\s*\"|\";\\n//g'");
+		warn localtime( time() ). " [INFO] " . " tags detectected git: " . $ver_tag -> [0] . " pm tag: ".$ver_pm -> [0]."\n";
+		if($ver_tag -> [0] ne $ver_pm -> [0] ){
+			warn  localtime( time() ). " [INFO] Updating version to match with git tag";
+			my $new_tag = $ver_tag -> [0];
+			my $backup_tag = $ver_pm -> [0];
+			CmdRunner("perl -i${backup_tag}.bak -wpe 's/\^our \\\$VERSION.*/our \\\$VERSION = \"$new_tag\";/' $pm");
+		}
+	}
+
+}
+
 WriteMakefile(
 	"NAME"              => 'pipeline::util',
-	"VERSION_FROM"      => 'lib/pipeline/util.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
+	"VERSION_FROM"      => $pm, # finds $VERSION, requires EU::MM from perl >= 5.5
 	"PREREQ_PM"         => {
 		#'Vcf' => '0.1.12b', #from vcftools
 		'List::MoreUtils' => '0.416',
