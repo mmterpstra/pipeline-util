@@ -29,7 +29,7 @@ sub main {
 		
 		warn localtime(time())." [INFO] Converting $segFile into bed\n";
 		
-		open(my $bedHandle,'>',$bedFile) or die "cannot write bed file".$bedFile;
+		open(my $bedHandle,"|-","sort -k 1,1 -k2,2n > '$bedFile'") or die "cannot write bed file".$bedFile;
 		
 		while($seg=SegNextDataHash($seg)){
 			#warn Dumper($seg);
@@ -72,9 +72,9 @@ sub PlotSegData {
 			next if($sampleCombi->{$sample1}->{$sample2} || $sample2 eq $sample1);
 			$sampleCombi->{$sample1}->{$sample2}++;
 			my $src = GetSourceDir();
-			my $cmd = "Rscript $src/PlotSegsSampleVsSample.R $mergedData $sample1 $sample2 2>/dev/null";
+			my $cmd = "Rscript $src/PlotSegsSampleVsSample.Rscript $mergedData $sample1 $sample2 2>/dev/null";
 			warn "## ".localtime(time())." [INFO] running command for plotting '$cmd'\n";
-			warn CmdRunner($cmd);
+			print CmdRunner($cmd);
 		}
 	}
 }
@@ -228,28 +228,38 @@ sub MultiInterToStringWithOffsets{
 		#for samples
 		$string.= $region;
 		my ($chrom,$start, $end) = split('\t',$region);
-		my $offset=$offsets->{'ChrOff'}->{$chrom};
-		$string.="\t".($offset+$start)."\t".($offset+$end);
-		
-		for my $sample (sort(keys(%{$self->{'samples'}}))){
-			my $ref='';
-			for my $sampledat (@{$self->{'regions'}->{$region}}){
-				#die Dumper($self->{'samples'});
-				if(defined($sampledat->{'ID'}) && $sampledat->{'ID'} eq $sample){
-					$ref=$sampledat;
+		if(defined($offsets->{'ChrOff'}->{$chrom}) or defined($offsets->{'ChrOff'}->{'chr'.$chrom})){
+			#the chr\missing chr thing is baked into the DNAcopy algorithm and everything that touches it.
+			my $offset;
+			if(defined($offsets->{'ChrOff'}->{$chrom})){
+				$offset=$offsets->{'ChrOff'}->{$chrom};
+			}else{
+				$offset=$offsets->{'ChrOff'}->{'chr'.$chrom};
+			}
+			$string.="\t".($offset+$start)."\t".($offset+$end);
+			
+			for my $sample (sort(keys(%{$self->{'samples'}}))){
+				my $ref='';
+				for my $sampledat (@{$self->{'regions'}->{$region}}){
+					#die Dumper($self->{'samples'});
+					if(defined($sampledat->{'ID'}) && $sampledat->{'ID'} eq $sample){
+						$ref=$sampledat;
+					}
+				}
+				for my $annotation (sort(keys(%{$self->{'annotations'}}))){
+					 if($ref && defined($ref->{${annotation}})){
+					 	$string.="\t".$ref->{${annotation}};
+					 }elsif($ref && not(defined($ref->{${annotation}}))){
+					 	$string.="\t"; die "Undef error: time to troubleshoot"
+					 }else{
+					 	$string.="\t";
+					 }
 				}
 			}
-			for my $annotation (sort(keys(%{$self->{'annotations'}}))){
-				 if($ref && defined($ref->{${annotation}})){
-				 	$string.="\t".$ref->{${annotation}};
-				 }elsif($ref && not(defined($ref->{${annotation}}))){
-				 	$string.="\t"; die "Undef error: time to troubleshoot"
-				 }else{
-				 	$string.="\t";
-				 }
-			}
+			$string.="\n";
+		}else{
+			warn "skipped".Dumper($region). "due to not having a chromosome offset";#.Dumper($offsets)." ";
 		}
-		$string.="\n";
 	}
 	#print "$string";
 	#die "$string";

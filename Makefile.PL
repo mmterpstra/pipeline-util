@@ -73,6 +73,7 @@ sub CmdRunner {
 # the contents of the Makefile that is written.
 
 my @exe_files = glob("src/*.pl");
+push(@exe_files,glob("src/*.Rscript"));
 
 WriteMakefile(
 	"NAME"              => 'pipeline::util',

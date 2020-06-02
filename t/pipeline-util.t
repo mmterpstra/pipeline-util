@@ -37,10 +37,11 @@ my $exes = [
         'src/VcfSnpEffAsGatk.pl',
 	'src/VcfQssFix.pl',
 	'src/VcfTableExportOneVariantPerSample.pl',
+	'src/RenameChromosomes.pl'
 ];
 
 
-use Test::More tests => 30;
+use Test::More tests => 31;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
@@ -58,4 +59,7 @@ ok(system( 'bash -c "echo > /dev/stderr && set -e && ' .
 
 ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
 	'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl complex.vcf t/data/annot.vcf t/data/annot.call1.vcf t/data/annot.call2.vcf ) '.
-	' t/data/recov.vcf &>/dev/stderr"') == 0 , 'RecoverSampleAnnotationsAfterCombineVariantsByPosWalk funtional test');
+	' t/data/recov.vcf &>/dev/stderr"') == 0 , 'RecoverSampleAnnotationsAfterCombineVariantsByPosWalk functional test');
+ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && mkdir -p tmp && '.
+        'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src//multiIntersectSeg.pl test/data/ref.dict  ./tmp/  test/data/multiinstersectseg/*.seg &>/dev/stderr &&  cat tmp/merged.tsv && rm -rv tmp/ &> /dev/stderr ) test/data/multiinstersectseg/merged.tsv  &>/dev/stderr"') == 0 , 'MultiInstersectSeg functional test');
+
