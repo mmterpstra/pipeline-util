@@ -41,7 +41,7 @@ my $exes = [
 ];
 
 
-use Test::More tests => 31;
+use Test::More tests => 32;
 BEGIN { use_ok('pipeline::util') };
 
 #########################
