@@ -1,5 +1,7 @@
 # Pipeline-util
 
+![alt master](https://travis-ci.org/mmterpstra/pipeline-util.svg?branch=master)
+
 Misc tools for pipelines written in molgenis-compute-5.
 
 These are too a degree expermental tools, before using them on your own data for analysis please check/validate the output. In the design the preference was made for 'more flexable' > 'less safe'.
@@ -125,12 +127,25 @@ made especially for 3 prime mrna-seq (lexogen) and derived protocols
 #### filterCombinedVariantsForGatk.pl 
  - This filters after CombineVariants giving prio to GATK if two records are found on the same position
 
-#### RecoverSampleAnnotationsAfterCombineVariants.pl
+#### RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl
  - Tries to annotate sample level annotations from other vcfs with the same samples. Used after CombineVariants to get a more exhaustive vcf so that the multiple alt could be annotated.
  - pseudo workflow (code does not work for briefness): 
     - gatkCombinevariants gatkHCcaller.vcf Freebayes.vcf -o combined.vcf
     - RecoverSampleAnnotationsAfterCombineVariants complex.out.vcf combined.vcf gatkHCcaller.vcf Freebayes.vcf > merge.no_complex_anno.vcf
     - gatkHCcaller --genotype_given_alles --alles complex.out.vcf -o regeno.vcf
     - RecoverSampleAnnotationsAfterCombineVariants reallycomplex.out.vcf merge.no_complex_anno.vcf regeno.vcf merge.final.vcf
+
+#### RecoverSampleAnnotationsAfterCombineVariants.pl
+
+ - similar tool as RecoverSampleAnnotationsAfterCombineVariantsByPosWalk.pl but depreciated
+
+#### multiIntersectSeg.pl
+
+ - an .seg adaptation of the `bedtools multiinter` tool from the bedtools suite also generates plots and all possible combinations of plots from the seg files
+
+### RenameChromosomes.pl
+
+ - sloppy liftover tool if you are switching between 'chr' and non 'chr' prefixed chromosome versions of the same build this is your friend
+
 
 -----
