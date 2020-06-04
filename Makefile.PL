@@ -13,29 +13,29 @@ my $extdeps;
 $extdeps = [
 	{
 		"dep" => "R",
-		"test" => "R --version",
+		"test" => "command -v -- R",
 		"hint" => "wget https://cran.r-project.org/src/base/R-3/R-3.4.4.tar.gz && tar -zxf R* && cd R* && configure && make" 
 		#maybe install?
 	},{	"dep" => "htslib",
-		"test" => "(exit 0)",
+		"test" => "command -v -- htsfile",
 		"hint" => "wget https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2 && tar -jxf htslib* && cd htslib* && make" 
 	},{	"dep" => "samtools",
-		"test" => "which samtools",
+		"test" => "command -v -- samtools",
 		"hint" => "wget https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2 && tar -jxf samtools* && cd samtools* && make"
 	},{	"dep" => "bedtools",
-		"test" => "bedtools --version",
+		"test" => "command -v -- bedtools",
 		"hint" => "wget https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz && tar -xzf https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz && cd bed* && make"
 	},{	"dep" => "bwa",
-		"test" => "which bwa", # the actual command exits with 1 with no working args
+		"test" => "command -v -- bwa", # the actual command exits with 1 with no working args
 		"hint" => "wget https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2 && tar -xjf https://github.com/lh3/bwa/releases/download/v0.7.17/bwa-0.7.17.tar.bz2 && cd bwa-* && make "
 	},{	"dep" => "DNAcopy the R library",
 		"test" => "Rscript -e 'library(\"DNAcopy\")'",
 		"hint" => "Rscript -e 'install.packages(c(\"DNAcopy\"))'"
 	},{	"dep" => "tabix",
-		"test" => "which tabix",
+		"test" => "command -v -- tabix",
 		"hint" => "sudo apt get install tabix"
         },{	"dep" => "vcftools",
-		"test" => "vcftools",
+		"test" => "command -v -- vcftools",
 		"hint" => "sudo apt get install vcftools"
 	}
 ];

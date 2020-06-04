@@ -35,7 +35,7 @@ our @EXPORT = qw(
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.15";
+our $VERSION = "0.8.15-1";
 
 
 # Preloaded methods go here.
