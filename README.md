@@ -23,10 +23,22 @@ perl scripts require the following libraries:
 
 To install this module type the following:
 
-   perl Makefile.PL
+   perl Makefile.PL # optionally PREFIX=~
    make
    make test
    make install
+
+Testing /commiting: 
+
+   #edit stuff
+   git add file
+   git commit -m "description"
+   perl Makefile.PL
+   make test
+   git add Makefile.PL
+   git commit -m "sync PM version to git"
+   git push
+   git push --tags
 
 ## DEPENDENCIES
 
