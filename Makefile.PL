@@ -18,7 +18,7 @@ $extdeps = [
 		#maybe install?
 	},{	"dep" => "htslib",
 		#"test" => "command -v -- htsfile",
-		"test"=> "ldconfig -p | grep libhts",
+		"test"=> "pkg-config --libs  htslib",
 		"hint" => "wget https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2 && tar -jxf htslib* && cd htslib* && make" 
 	},{	"dep" => "samtools",
 		"test" => "command -v -- samtools",
