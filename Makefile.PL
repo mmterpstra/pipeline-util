@@ -51,8 +51,9 @@ sub CmdRunner {
         my $cmd = join(" ",@_);
 
         warn localtime( time() ). " [INFO] system call:'". $cmd."'.\n";
-
-        @{$ret} = `(set -e; set -o pipefail; $cmd )2>&1`;
+	
+	#adding a `set -e; set -o pipefail` although safer wil crash the travis build env. 
+        @{$ret} = `( $cmd )2>&1`;
 	my $exitcode = $?;
         if ($exitcode == -1) {
                 die localtime( time() ). " [ERROR] failed to execute: $!\n";
