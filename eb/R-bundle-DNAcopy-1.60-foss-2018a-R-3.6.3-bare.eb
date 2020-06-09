@@ -1,0 +1,172 @@
+#
+# This EasyBuild config file for RPlus was generated with generateEasyConfig.R
+#
+easyblock = 'Bundle'
+name = 'R-bundle-DNAcopy'
+version = '1.60'
+local_rver = '3.6.3'
+versionsuffix = '-R-' + local_rver + '-bare'
+homepage = 'http://www.r-project.org/'
+description = '''R is a free software environment for statistical computing and graphics.'''
+moduleclass = 'lang'
+modextrapaths = {'R_LIBS': ['library', '']}
+toolchain = {'name': 'foss', 'version': '2018a'}
+
+#
+# You may need to include a more recent Python to download R packages from HTTPS based URLs
+# when the Python that comes with your OS is too old and you encounter:
+#     SSL routines:SSL23_GET_SERVER_HELLO:sslv3 alert handshake failure
+# In that case make sure to include a Python as builddependency. 
+# This Python should not be too new either: it's dependencies like for example on ncursus should be compatible with R's dependencies.
+# The alternative is to replace the https URLs with http URLs in the generated EasyConfig.
+#
+#builddependencies = [
+#    ('Python', '3.7.4')
+#]
+
+dependencies = [
+    ('R', local_rver, '-bare'),
+#    ('GMP', '6.1.2'),
+#    ('UDUNITS', '2.2.27.6'),
+#    ('ImageMagick', '7.0.8-56'),
+#    ('MariaDB-connector-c', '3.1.2'),
+#    ('NLopt', '2.6.1'),
+]
+
+#
+# The '.' is a silly workaround to check for whatever current dir as workaround
+# until an updated RPackage is available, which installs extension R packages in a library subdir.
+#
+sanity_check_paths = {
+    'files': [],
+    'dirs': [('library', '.')],
+}
+
+local_package_name_tmpl = '%(name)s_%(version)s.tar.gz'
+exts_defaultclass = 'RPackage'
+exts_filter = ('R -q --no-save', 'library(%(ext_name)s)')
+
+local_cran_options = {
+    'source_urls': [
+        'http://cran.r-project.org/src/contrib/',
+        'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+    ],
+    'source_tmpl': local_package_name_tmpl,
+}
+local_bioconductor_options = {
+    'source_urls': [
+        'http://www.bioconductor.org/packages/release/bioc/src/contrib/',
+        'http://www.bioconductor.org/packages/release/data/annotation/src/contrib/',
+        'http://www.bioconductor.org/packages/release/data/experiment/src/contrib/',
+        'http://www.bioconductor.org/packages/release/extra/src/contrib/',
+        'http://bioconductor.org/packages/3.10/bioc/src/contrib/',
+        'http://bioconductor.org/packages/3.10/data/annotation/src/contrib/',
+        'http://bioconductor.org/packages/3.10/data/experiment/src/contrib/',
+        'http://bioconductor.org/packages/3.10/workflows/src/contrib/',
+        'http://bioconductor.org/packages/3.10/bioc/src/contrib/Archive/%(name)s/',
+        'http://bioconductor.org/packages/3.10/data/annotation/src/contrib/Archive/%(name)s/',
+        'http://bioconductor.org/packages/3.10/data/experiment/src/contrib/Archive/%(name)s/',
+        'http://bioconductor.org/packages/3.10/workflows/src/contrib/Archive/%(name)s/',
+    ],
+    'source_tmpl': local_package_name_tmpl,
+}
+
+#
+# R package list.
+#   * Order of packages is important!
+#   * Packages should be specified with fixed versions!
+#
+exts_list = [
+    ('BH', '1.72.0-3', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['888ec1a3316bb69e1ba749b08ba7e0903ebc4742e3a185de8d148c13cddac8ab'],
+    }),
+    ('BiocManager', '1.30.10', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['f3b7a412b42be0ab8df5fcd9bf981876ba9e5c55bc5faaca7af7ede3b6d0c90e'],
+    }),
+    ('BiocVersion', '3.10.1', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://www.bioconductor.org/packages/release/bioc/src/contrib/',
+            'http://www.bioconductor.org/packages/release/data/annotation/src/contrib/',
+            'http://www.bioconductor.org/packages/release/data/experiment/src/contrib/',
+            'http://www.bioconductor.org/packages/release/extra/src/contrib/',
+            'http://bioconductor.org/packages/3.10/bioc/src/contrib/',
+            'http://bioconductor.org/packages/3.10/data/annotation/src/contrib/',
+            'http://bioconductor.org/packages/3.10/data/experiment/src/contrib/',
+            'http://bioconductor.org/packages/3.10/workflows/src/contrib/',
+            'http://bioconductor.org/packages/3.10/bioc/src/contrib/Archive/%(name)s/',
+            'http://bioconductor.org/packages/3.10/data/annotation/src/contrib/Archive/%(name)s/',
+            'http://bioconductor.org/packages/3.10/data/experiment/src/contrib/Archive/%(name)s/',
+            'http://bioconductor.org/packages/3.10/workflows/src/contrib/Archive/%(name)s/',
+        ],
+        'checksums': ['ae406aff4b6e3b26a8ed6e5901f6e7763858585cf6bc811ba58ff3bc1d96d855'],
+    }),
+    ('DNAcopy', '1.60.0', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://www.bioconductor.org/packages/release/bioc/src/contrib/',
+            'http://www.bioconductor.org/packages/release/data/annotation/src/contrib/',
+            'http://www.bioconductor.org/packages/release/data/experiment/src/contrib/',
+            'http://www.bioconductor.org/packages/release/extra/src/contrib/',
+            'http://bioconductor.org/packages/3.10/bioc/src/contrib/',
+            'http://bioconductor.org/packages/3.10/data/annotation/src/contrib/',
+            'http://bioconductor.org/packages/3.10/data/experiment/src/contrib/',
+            'http://bioconductor.org/packages/3.10/workflows/src/contrib/',
+            'http://bioconductor.org/packages/3.10/bioc/src/contrib/Archive/%(name)s/',
+            'http://bioconductor.org/packages/3.10/data/annotation/src/contrib/Archive/%(name)s/',
+            'http://bioconductor.org/packages/3.10/data/experiment/src/contrib/Archive/%(name)s/',
+            'http://bioconductor.org/packages/3.10/workflows/src/contrib/Archive/%(name)s/',
+        ],
+        'checksums': ['dca77a9a274087c4105aa9de154b617cb83ec3ec6b37a2cdbb377108312d3f85'],
+    }),
+    ('glue', '1.4.1', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['f8b687d35cacb5ee7fcada6e9c26ea20c04d0bdc9d37e919a03abd1137513bc8'],
+    }),
+    ('logging', '0.10-108', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['85c91aa5a313f5f9fbb0394cda3f924a2495cca3cc5cd68dde0695fe3c20ed8d'],
+    }),
+    ('magrittr', '1.5', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['05c45943ada9443134caa0ab24db4a962b629f00b755ccf039a2a2a7b2c92ae8'],
+    }),
+    ('stringi', '1.4.6', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['633f67da5bd7bcb611764e4f478b0da050d22a715bbcbdd67aed0300dcef6fd6'],
+    }),
+    ('stringr', '1.4.0', {
+        'source_tmpl': '%(name)s_%(version)s.tar.gz',
+        'source_urls': [
+            'http://cran.r-project.org/src/contrib/',
+            'http://cran.r-project.org/src/contrib/Archive/%(name)s',
+        ],
+        'checksums': ['87604d2d3a9ad8fd68444ce0865b59e2ffbdb548a38d6634796bbd83eeb931dd'],
+    }),
+]
