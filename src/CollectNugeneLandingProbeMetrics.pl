@@ -27,7 +27,8 @@ getopts('d', $opts);
 main();
 
 sub main{
-	warn "Commandline: $0 ".join(' ',@ARGV)."\n";
+	my $use = "use: CollectNugeneLandingProbeMetrics.pl [-d] input.sam\n   -d disables duplicate skipping\n   example:samtools view -h sample.bam | CollectNugeneLandingProbeMetrics.pl > metrics.log\n";
+	warn "$use Commandline: $0 ".join(' ',@ARGV)."\n";
 	my $landingProbeMetrics;
 	while(<>){
 		next if(m/^\@/);

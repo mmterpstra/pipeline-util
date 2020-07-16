@@ -1,0 +1,61 @@
+#!/usr/bin/env Rscript
+library(QDNAseq)
+
+argv <- commandArgs(trailingOnly=TRUE)
+
+warning("Use: runqDNAseq.Rscript bins.Rds in.bam out.pdf\n Also drops .vcf/.seg after stripping pdf extension")
+
+bins <-readRDS(argv[1])
+bam <- argv[2]
+pdf <- paste(strsplit(argv[3],".pdf$"),"pdf", sep=".")
+seg <- paste(strsplit(pdf,".pdf$"),"seg", sep=".")
+vcf <- paste(strsplit(pdf,".pdf$"),"vcf", sep=".")
+#
+#readCounts <- binReadCounts(bins)
+readCounts <- binReadCounts(bins, bamfiles=c(bam))
+pdf(pdf, width=20, height=8, useDingbats=F)
+
+plot(readCounts, logTransform=TRUE)
+
+readCountsFiltered <- applyFilters(readCounts, residual=FALSE, blacklist=TRUE)
+
+#highlightFilters(readCounts, logTransform=FALSE,
+#	residual=TRUE, blacklist=TRUE)
+
+#readCountsFiltered <- applyFilters(readCounts, residual=TRUE, blacklist=TRUE)
+isobarPlot(readCountsFiltered)
+readCountsFiltered <- estimateCorrection(readCountsFiltered)
+
+noisePlot(readCountsFiltered)
+
+copyNumbers <- correctBins(readCountsFiltered)
+
+copyNumbersNormalized <- normalizeBins(copyNumbers)
+copyNumbersSmooth <- smoothOutlierBins(copyNumbersNormalized)
+plot(copyNumbersSmooth)
+copyNumbersSegmented <- segmentBins(copyNumbersSmooth, transformFun="sqrt")
+copyNumbersSegmented <- normalizeSegmentedBins(copyNumbersSegmented)
+plot(copyNumbersSegmented)
+copyNumbersCalled <- callBins(copyNumbersSegmented)
+plot(copyNumbersCalled)
+#warnings()
+
+dev.off()
+
+#warnings()
+#saveRDS(copyNumbersCalled, file="QDNAseq_issue087.rds")
+#sessionInfo()
+
+exportBins(file=vcf,object=copyNumbersCalled, format="vcf")
+library(Biobase)
+# the vcf export works fine btw
+if(length(which(na.omit(assayDataElement(copyNumbersCalled, "calls")) != 0)) == 0){
+	warning("No CopyNumbers Called.")
+	cat(paste(sep='',"SAMPLE_NAME\tCHROMOSOME\tSTART\tSTOP\tDATAPOINTS\tLOG2_RATIO_MEAN\n",copyNumbersCalled$name,"\t1\t1\t100\t0\t1\n"),file=seq)
+}else{
+	warning("Copynumbers Called.")
+	exportBins(file=seg,object=copyNumbersCalled, format="seg")	
+}
+
+#exportBins(file=paste(argv[1],'.vcf',sep=''),object=copyNumbersCalled,  format="vcf")
+summary(warnings())
