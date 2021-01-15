@@ -7,6 +7,7 @@ use Vcf;
 use Data::Dumper;
 use Carp qw(verbose confess carp croak);
 require Exporter;
+use List::Util qw/sum/;
 
 our @ISA = qw(Exporter);
 
@@ -30,12 +31,13 @@ our @EXPORT = qw(
 	NewWalk
 	WalkToNext
 	AnnotateTargetRecords
+	ADFilterTargetRecords
 	FormatWalkTargetLineAsVcfLine
 	FormatWalkTargetLineAsVcfHeader
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.16";
+our $VERSION = "0.8.17";
 
 # Preloaded methods go here.
 # Below is stub documentation for your module. You'd better edit it!
@@ -148,6 +150,34 @@ sub AnnotateTargetRecords {
 	return $walk;
 }
 
+sub ADFilterTargetRecords {
+	my $self ;%{$self}= @_ ;
+	SelfRequire(%{$self},'req'=> ['walk','deltafrequency','deltacount']);
+	my $walk = $self -> {'walk'};
+	my $annotated;
+	#die Dumper($self -> {'record'}).  "  ";
+	for my $target ($walk -> {'targetvcf' }){
+		for my $targetrecord (@{$target -> {'buffer' } -> {'current'}}){
+			for my $vcf (@{$walk -> {'vcfs' }}){
+				for my $record (@{$vcf -> {'buffer' } -> {'current'}}){
+					#die Dumper($self -> {'record'}).  "  ";
+					next if(not(VariantIsEq('loc1' => $targetrecord, 'loc2' => $record)));
+					
+					#annotate
+					#$walk -> {'targetvcf' }  -> {'buffer' } -> {'current'} = 
+					$targetrecord = FilterVariant('targetvcfhandle' => $walk -> {'targetvcf' } -> {'handle'},'targetrecord' => $targetrecord, 'record' => $record,'deltafrequency'=> $self -> {'deltafrequency'},'deltacount'=> $self -> {'deltacount'});
+					$annotated -> { $vcf -> {'file'} }++; 
+				}
+			}
+			#Dumper($record);
+			#next if not(scalar(keys(%{$record})));
+			#$out .= $vcf -> {'file' } . ":\tcurr:\t" .
+			#	$vcf -> {'handle'} -> format_line($record);
+		}
+	}
+	return $walk;
+}
+
 sub AnnotateVariant {
 	my $self ;%{$self}= @_;
 	SelfRequire(%{$self},'req'=> ['targetrecord','targetvcfhandle','record']);
@@ -187,6 +217,116 @@ sub AnnotateVariant {
 	}
 	return $self -> {'targetrecord'};
 }
+
+sub FilterVariant {
+	my $self;%{$self}= @_;
+	SelfRequire(%{$self},'req'=> ['targetrecord','targetvcfhandle','record']);
+	#die Dumper($self -> {'record'}).  "  ";
+	my $passNoAdFilter = 0;
+	my $passCountFilter = 0;
+	my $passFreqFilter = 0;	
+	#warn Dumper($self -> {'targetrecord'},$self -> {'record'})." " ;
+	for my $targetsample (keys(%{$self -> {'targetrecord'} -> {'gtypes'}})){
+		for my $filtersample (keys(%{$self -> {'record'} -> {'gtypes'}})){
+			next if($targetsample eq $filtersample);
+			if($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'} eq '.' || 
+				$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'targetrecord'} -> {'ALT'}}) ){
+					#next...
+			}elsif($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq '.' || 
+					$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'record'} -> {'ALT'}})){
+				$passNoAdFilter++;
+				my @targetAD=split(',',$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}); my @targetALT= @{$self -> {'targetrecord'} -> {'ALT'}};
+				my $targetindex = 0;
+				while ($targetindex < scalar(@targetALT)){
+					if($targetAD[$targetindex - 1 ] >= ($self -> {'deltacount'})){
+						$passCountFilter++;
+					};
+					if($targetAD[$targetindex - 1 ]/sum(@targetAD) >= ($self -> {'deltafrequency'})){
+						$passFreqFilter++;
+					};
+					$targetindex++;
+				}
+			}else{
+				$passNoAdFilter++;
+				my @targetAD=split(',',$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}); my @targetALT= @{$self -> {'targetrecord'} -> {'ALT'}};
+				my @filterAD=split(',',$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}); my @filterALT= @{$self -> {'record'} -> {'ALT'}};
+				next if($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq '.' || 
+					$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'record'} -> {'ALT'}}));
+
+				my $targetindex = 0;
+				while ($targetindex < scalar(@targetALT)){
+					#warn "loop1";
+					my $filterindex = 0;
+					while ($filterindex < scalar(@filterALT)){
+						#warn "loop2";
+						#filter for count
+						if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex - 1 ] >= ($self -> {'deltacount'} + $filterAD[$filterindex - 1]) ){
+							$passCountFilter++;
+						}
+						#filter for freq
+						if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex - 1 ]/sum(@targetAD) >= ($self -> {'deltafrequency'} + $filterAD[$filterindex - 1]/sum(@filterAD)) ){						
+							$passFreqFilter++;
+						}
+						$filterindex++;
+					}
+					$targetindex++;
+				}
+			}
+
+		}
+	}
+	if($passNoAdFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"NoAD") == -1){
+
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS'){
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("NoAD");	
+		}else{
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"NoAD");
+		}
+	}
+	if($passCountFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADCount") == -1){
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS'){							
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("LowADCount");	
+		}else{
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"LowADCount");
+		}
+	}
+	if($passFreqFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADfrequency") == -1){
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS'){
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("LowADfrequency");	
+		}else{
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"LowADfrequency");
+		}
+	}
+	return $self -> {'targetrecord'};
+}
+#			#die Dumper($self -> {'record'})."object dump" ;
+#			for my $infofield (sort(keys(%{$self -> {'record'} ->  {'INFO'}}))){
+#				#second part needs to be either . or .(,.)* so to make it fast substr($text,0,1) eq '.'
+#				if(not(defined $self -> {'targetrecord'} -> {'INFO'} -> {$infofield}) || substr($self -> {'targetrecord'} -> {'INFO'} -> {$infofield},0,1) eq '.'){
+#					$self -> {'targetrecord'} -> {'INFO'} -> {$infofield} = $self -> {'record'} -> {'INFO'} -> {$infofield};
+#				}
+#				
+#			}
+#			#warn Dumper(sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} })))." ################################################################################################# ";
+#			for my $formatfield (sort(keys(%{$self -> {'record'} ->  {'gtypes'} -> {$sample} }))){
+#
+#				#This might contain skips if for example the genotype is already present
+#				if(defined($formatfield) && $formatfield eq 'GT' && 
+#					($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq '.' ||
+#					 $self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} eq './.') ){
+#					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} ->  {'gtypes'} -> {$sample} -> {$formatfield};
+#				}
+#				#second part needs to be either . or .(,.)* so to make it fast substr($text,0,1) eq '.'
+#				if( (not( defined($self -> {'targetrecord'} ->  {'gtypes'} -> {$sample} -> {$formatfield})) || 
+#					 substr($self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) eq '.') && 
+#					 defined($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield}) &&
+#					 substr($self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield},0,1) ne '.'){
+#					
+#					$self -> {'targetvcfhandle'} -> add_format_field($self -> {'targetrecord'},$formatfield);
+#					$self -> {'targetrecord'} -> {'gtypes'} -> {$sample} -> {$formatfield} = $self -> {'record'} -> {'gtypes'} -> {$sample} -> {$formatfield};
+#					#$vcf->add_format_field($x,'FOO');
+#				}
+#			}
 
 
 sub _formatwalkasvcflineswithfile {
@@ -241,10 +381,14 @@ sub FormatWalkTargetLineAsVcfHeader {
 	my $self ;%{$self}= @_ ;
 	SelfRequire(%{$self},'req'=> ['walk']);
 	my $walk = $self -> {'walk'};
-		my $out;	
+		my $out;
 	
+	for my $header (@{$self -> {'headerlines'} }){
+		warn Dumper($header)." ";
+		$walk -> {'targetvcf' } -> {'handle' } -> add_header_line(\%{$header});
+	}
 	$out .= $walk -> {'targetvcf' } -> {'handle' } -> format_header();
-	
+	#$out .= 
 	
 	return $out;
 	
