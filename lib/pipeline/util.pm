@@ -275,23 +275,26 @@ sub FilterVariant {
 
 		}
 	}
+	if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
+		$self -> {'targetrecord'} -> {'FILTER'} -> [0] == 'PASS';
+	}
 	if($passNoAdFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"NoAD") == -1){
 
-		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS'){
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("NoAD");	
 		}else{
 			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"NoAD");
 		}
 	}
 	if($passCountFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADCount") == -1){
-		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS'){							
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){							
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("LowADCount");	
 		}else{
 			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"LowADCount");
 		}
 	}
 	if($passFreqFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADfrequency") == -1){
-		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS'){
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("LowADfrequency");	
 		}else{
 			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"LowADfrequency");

@@ -193,7 +193,7 @@ sub DoMedianNormalisationAndDNAcopy{
 	my $shortname = basename($dataTable,'.cn.called','.Varscan2copyCaller.called','.40.called','.called','.Varscan2copyCaller');
 	my $dirname = dirname($dataTable);
 	warn $dirname;	
-	warn "Skipped DNAcopy because output is already present, if not please remove: '$shortname.seg.table'\n"&& return "$shortname.seg.table" if(-e "${dirname}$shortname.seg.table" && -s "${dirname}$shortname.seg.table");
+	warn "Skipped DNAcopy because output is already present, if not please remove: '$shortname.seg.table'\n"&& return("${dirname}${shortname}.seg.table") if(-e "${dirname}$shortname.seg.table" && -s "${dirname}$shortname.seg.table");
 	
 	my $rscript = <<"END";
 #load data
