@@ -43,7 +43,8 @@ my $exes = [
 ];
 
 
-use Test::More tests => 35;
+use Test::More tests => 36;
+#(6+scalar(@{$exes}));#1 pm test #5 funtional tests and other syntax tests for scripts
 BEGIN { use_ok('pipeline::util') };
 
 #########################
