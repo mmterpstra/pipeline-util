@@ -43,7 +43,8 @@ sub main{
 	my $headerlines;
 	@{$headerlines} = ({key=>'FILTER', ID=>'NoAD', Description=>'No Allele Depth values to filter on'}, 
 		{key=>'FILTER', ID=>'LowADCount', Description=>'LowADCount'},
-		{key=>'FILTER', ID=>'LowADfrequency', Description=>'LowADfrequency'});
+		{key=>'FILTER', ID=>'LowADfrequency', Description=>'LowADfrequency'},
+		{key=>'FILTER', ID=>'PASS', Description=>'All filters passed'});
 	print FormatWalkTargetLineAsVcfHeader('walk' =>  $walkdata,'headerlines' => $headerlines);
 	while(WalkToNext('walk'=> $walkdata)){
 		#die Dumper($walkdata)."here"

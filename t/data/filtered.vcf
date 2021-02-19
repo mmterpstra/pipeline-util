@@ -1,5 +1,4 @@
 ##fileformat=VCFv4.2
-##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Number of observation for each allele">
 ##FORMAT=<ID=AO,Number=A,Type=Integer,Description="Alternate allele observation count">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
@@ -149,6 +148,7 @@
 ##FILTER=<ID=NoAD,Description="No Allele Depth values to filter on">
 ##FILTER=<ID=LowADCount,Description="LowADCount">
 ##FILTER=<ID=LowADfrequency,Description="LowADfrequency">
+##FILTER=<ID=PASS,Description="All filters passed">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1
 1	100	.	N	AGAG	30	NoAD;LowADCount;LowADfrequency	.	GT:AD:DP	0/0:.:100
 1	200	.	N	AGAG	30	LowADCount;LowADfrequency	.	GT:AD:DP	0/1:101,50:101

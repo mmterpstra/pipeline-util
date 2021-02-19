@@ -12,6 +12,7 @@ use warnings;
 my $exes = [
 	'src/AddAdBasedAnnotations.pl',
         'src/AddAlleleFrequenciesToSeg.pl',
+        'src/AddFragCountsToVariants.pl',
         'src/AdFilter.pl',
         'src/CalleriseVcf.pl',
         'src/CollectNugeneLandingProbeMetrics.pl',
@@ -70,7 +71,9 @@ ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
 #made with perl src/RenameChromosomes.pl 0 test/data/renamechromosomes/renamechroms.tsv test/data/renamechromosomes/renamechroms.inputbed.bed > test/data/renamechromosomes/renamechroms.outputbed.bed
 
 #ADfilter test
+#made with `cat <(export PERL5LIB="blib/lib/":$PERL5LIB && perl src/AdFilter.pl -f 0.1 -c 4 t/data/target.vcf t/data/filter.vcf 2>/dev/null )> t/data/filtered.vcf` 
 ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
-        'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/AdFilter.pl -f 0.1 -c 4 t/data/target.vcf t/data/filter.vcf ) t/data/filtered.vcf '.
+        'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/AdFilter.pl -f 0.1 -c 4 t/data/target.vcf t/data/filter.vcf ) '.
+	't/data/filtered.vcf '.
         ' &>/dev/stderr"') == 0 , 'AdFilter functional test');
 

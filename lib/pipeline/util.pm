@@ -276,7 +276,7 @@ sub FilterVariant {
 		}
 	}
 	if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
-		$self -> {'targetrecord'} -> {'FILTER'} -> [0] == 'PASS';
+		$self -> {'targetrecord'} -> {'FILTER'} -> [0] = 'PASS';
 	}
 	if($passNoAdFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"NoAD") == -1){
 
