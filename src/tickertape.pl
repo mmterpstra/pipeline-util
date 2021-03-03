@@ -1282,6 +1282,11 @@ sub GetSamFlagRead {
 	#die $s -> [1];
 	return $s -> [1];
 }
+sub GetSamChromRead {
+	my $s= shift(@_);
+	confess " #############3here" if($s == 75);
+	return $s -> [2];
+}
 sub GetSamPosRead {
 	my $s= shift(@_);
 	return $s -> [3];

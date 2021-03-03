@@ -13,6 +13,7 @@ my $exes = [
 	'src/AddAdBasedAnnotations.pl',
         'src/AddAlleleFrequenciesToSeg.pl',
         'src/AddFragCountsToVariants.pl',
+	'src/AddFragCountsToVariantsSamtools.pl',
         'src/AdFilter.pl',
         'src/CalleriseVcf.pl',
         'src/CollectNugeneLandingProbeMetrics.pl',
