@@ -90,7 +90,7 @@ if($git -> [0] =~ m!.*/git!){
 	my $git_descr;
 	@{$git_descr} = CmdRunner("git describe --tag || exit 0");
 	if($git_descr -> [0] =~ m/\d+\.\d+\.\d+/){ 
-		warn localtime( time() ). " [INFO] in git repo with tag"; 
+		warn localtime( time() ). " [INFO] in git repo with tag ".join(" ",@{$git_descr}); 
 		#this likely means were in a repo so we can edit the $VERSION if these arent the same as the github repo
 		my $ver_tag; @{$ver_tag} = CmdRunner("git describe --tags| perl -wpe 's/\n//'");
 		my $ver_pm;@{$ver_pm} = CmdRunner("grep '\$VERSION' $pm | perl -wpe 's/.*=\\s*\"|\";\\n//g'");
