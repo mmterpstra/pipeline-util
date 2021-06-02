@@ -37,7 +37,7 @@ our @EXPORT = qw(
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.18-1-gd63ef02";
+our $VERSION = "0.8.18-3-g47675d0";
 
 # Preloaded methods go here.
 # Below is stub documentation for your module. You'd better edit it!
@@ -278,26 +278,26 @@ sub FilterVariant {
 	if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
 		$self -> {'targetrecord'} -> {'FILTER'} -> [0] = 'PASS';
 	}
-	if($passNoAdFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"NoAD") == -1){
-
-		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
-			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("NoAD");	
-		}else{
-			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"NoAD");
-		}
-	}
+	#if($passNoAdFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"NoAD") == -1){
+#
+#		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
+#			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("NoAD");	
+#		}else{
+#			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"NoAD");
+#		}
+#	}
 	if($passCountFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADCount") == -1){
 		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){							
-			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("LowADCount");	
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ('ADDeltaCountlt'.$self -> {'deltacount'});	
 		}else{
-			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"LowADCount");
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},'ADDeltaCountlt'.$self -> {'deltacount'});
 		}
 	}
 	if($passFreqFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADfrequency") == -1){
 		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
-			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("LowADfrequency");	
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("ADDeltaFrequencylt".$self -> {'deltafrequency'});	
 		}else{
-			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"LowADfrequency");
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"ADDeltaFrequencylt".$self -> {'deltafrequency'});
 		}
 	}
 	return $self -> {'targetrecord'};
