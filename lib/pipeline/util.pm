@@ -238,10 +238,10 @@ sub FilterVariant {
 				my @targetAD=split(',',$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}); my @targetALT= @{$self -> {'targetrecord'} -> {'ALT'}};
 				my $targetindex = 0;
 				while ($targetindex < scalar(@targetALT)){
-					if($targetAD[$targetindex - 1 ] >= ($self -> {'deltacount'})){
+					if($targetAD[$targetindex - 1 ] <= ($self -> {'deltacount'})){
 						$passCountFilter++;
 					};
-					if($targetAD[$targetindex - 1 ]/sum(@targetAD) >= ($self -> {'deltafrequency'})){
+					if($targetAD[$targetindex - 1 ]/sum(@targetAD) <= ($self -> {'deltafrequency'})){
 						$passFreqFilter++;
 					};
 					$targetindex++;
@@ -260,11 +260,11 @@ sub FilterVariant {
 					while ($filterindex < scalar(@filterALT)){
 						#warn "loop2";
 						#filter for count
-						if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex - 1 ] >= ($self -> {'deltacount'} + $filterAD[$filterindex - 1]) ){
+						if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex - 1 ] <= ($self -> {'deltacount'} + $filterAD[$filterindex - 1]) ){
 							$passCountFilter++;
 						}
 						#filter for freq
-						if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex - 1 ]/sum(@targetAD) >= ($self -> {'deltafrequency'} + $filterAD[$filterindex - 1]/sum(@filterAD)) ){						
+						if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex - 1 ]/sum(@targetAD) <= ($self -> {'deltafrequency'} + $filterAD[$filterindex - 1]/sum(@filterAD)) ){						
 							$passFreqFilter++;
 						}
 						$filterindex++;
@@ -286,14 +286,14 @@ sub FilterVariant {
 #			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"NoAD");
 #		}
 #	}
-	if($passCountFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADCount") == -1){
+	if($passCountFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),'ADDeltaCountlt'.$self -> {'deltacount'}) == -1){
 		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){							
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ('ADDeltaCountlt'.$self -> {'deltacount'});	
 		}else{
 			push(@{$self -> {'targetrecord'} -> {'FILTER'}},'ADDeltaCountlt'.$self -> {'deltacount'});
 		}
 	}
-	if($passFreqFilter == 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"LowADfrequency") == -1){
+	if($passFreqFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"ADDeltaFrequencylt".$self -> {'deltafrequency'}) == -1){
 		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("ADDeltaFrequencylt".$self -> {'deltafrequency'});	
 		}else{
