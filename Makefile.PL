@@ -92,7 +92,15 @@ if($git -> [0] =~ m!.*/git!){
 	if($git_descr -> [0] =~ m/\d+\.\d+\.\d+/){ 
 		warn localtime( time() ). " [INFO] in git repo with tag ".join(" ",@{$git_descr}); 
 		#this likely means were in a repo so we can edit the $VERSION if these arent the same as the github repo
-		my $ver_tag; @{$ver_tag} = CmdRunner("git describe --tags| perl -wpe 's/\n//'");
+		my $ver_tag; @{$ver_tag} = CmdRunner("git describe --tags| perl -wpe 'chomp;s/\n//'");
+		#cleanup ver tag:
+		if($ver_tag -> [0] =~ m/\-(\d+)\-[\d\w]{8}\-1\-[\d\w]{8}$/){
+			print "matched $ver_tag -> [0]\n";
+			my $commitcount = $1 +1;
+			$ver_tag -> [0] =~ s/-\d+-[\d\w]{8}-1-([\d\w]{8})$/-$commitcount-$1/;
+			#update tag:
+			my $ret; @{$ret} = CmdRunner("git tag $ver_tag");
+		}
 		my $ver_pm;@{$ver_pm} = CmdRunner("grep '\$VERSION' $pm | perl -wpe 's/.*=\\s*\"|\";\\n//g'");
 		warn localtime( time() ). " [INFO] " . " tags detectected git: " . $ver_tag -> [0] . " pm tag: ".$ver_pm -> [0]."\n";
 		if($ver_tag -> [0] ne $ver_pm -> [0] ){
