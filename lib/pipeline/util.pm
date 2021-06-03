@@ -250,12 +250,22 @@ sub FilterVariant {
 				$passNoAdFilter++;
 				my @targetAD=split(',',$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}); my @targetALT= @{$self -> {'targetrecord'} -> {'ALT'}};
 				my @filterAD=split(',',$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}); my @filterALT= @{$self -> {'record'} -> {'ALT'}};
+
+				
+
 				next if($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq '.' || 
 					$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'record'} -> {'ALT'}}));
 
 				my $targetindex = 0;
 				while ($targetindex < scalar(@targetALT)){
 					#warn "loop1";
+					
+					if($targetAD[$targetindex - 1 ] <= ($self -> {'deltacount'})){
+						$passCountFilter++;
+					};
+					if($targetAD[$targetindex - 1 ]/sum(@targetAD) <= ($self -> {'deltafrequency'})){
+						$passFreqFilter++;
+					};
 					my $filterindex = 0;
 					while ($filterindex < scalar(@filterALT)){
 						#warn "loop2";
