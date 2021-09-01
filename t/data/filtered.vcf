@@ -157,4 +157,7 @@
 2	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:104,0:104
 2	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:105,0:105
 3	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:106,0:105
-4	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:107,0:105
+4	300	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:107,3:105
+4	400	.	N	AGAG	30	ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:107,4:105
+4	500	.	N	AGAG	30	ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:107,5:105
+4	500	.	N	AGA	30	PASS	.	GT:AD:DP	0/0:.,0:105
