@@ -37,7 +37,7 @@ our @EXPORT = qw(
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.19-2-g1d682dd";
+our $VERSION = "0.8.19-4-g072a8c9";
 
 # Preloaded methods go here.
 # Below is stub documentation for your module. You'd better edit it!
@@ -322,7 +322,7 @@ sub ADFilterVariant {
 
 				}
 			}else{
-				warn " Comparison chromposref not matched ".Dumper($self -> {'targetrecord'}  -> {'CHROM'},$self -> {'targetrecord'}  -> {'POS'})."vs". Dumper($self -> {'record'} -> {'CHROM'}, $self -> {'record'} -> {'POS'});
+				#warn " Comparison chromposref not matched ".Dumper($self -> {'targetrecord'}  -> {'CHROM'},$self -> {'targetrecord'}  -> {'POS'})."vs". Dumper($self -> {'record'} -> {'CHROM'}, $self -> {'record'} -> {'POS'});
 				if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
 					$passCountFilter++;
 				};
@@ -390,7 +390,7 @@ sub ADFilterVariant {
 
 sub _isValidAD {
 	my $AD;
-	$AD = @_[0];
+	$AD = $_[0] or die "Needs string AD field input.";
 	my @DepthByAlle= split(',',$AD);
 	warn Dumper(sum( map { if($_ eq '.'){$_ = 0}   } @DepthByAlle))." ";
 	if(not(defined($AD))){

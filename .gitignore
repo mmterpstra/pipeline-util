@@ -1,3 +1,8 @@
 .*
 *~
 *.bak
+t/data/bedtrim_test.bai
+t/data/bedtrim_test.bam
+t/data/bedtrim_test.fq.gz
+t/data/bedtrim_test_R1.fq.gz
+t/data/bedtrim_test_R2.fq.gz

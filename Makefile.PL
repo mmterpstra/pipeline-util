@@ -99,7 +99,7 @@ if($git -> [0] =~ m!.*/git!){
 			my $commitcount = $1 +1;
 			$ver_tag -> [0] =~ s/-\d+-[\d\w]{8}-1-([\d\w]{8})$/-$commitcount-$1/;
 			#update tag:
-			my $ret; @{$ret} = CmdRunner("git tag $ver_tag");
+			my $ret; @{$ret} = CmdRunner("git tag ".$ver_tag -> [0] );
 		}
 		my $ver_pm;@{$ver_pm} = CmdRunner("grep '\$VERSION' $pm | perl -wpe 's/.*=\\s*\"|\";\\n//g'");
 		warn localtime( time() ). " [INFO] " . " tags detectected git: " . $ver_tag -> [0] . " pm tag: ".$ver_pm -> [0]."\n";
