@@ -4,9 +4,10 @@ use warnings;
 use Data::Dumper;
 
 my $use = <<"END";
-	simple extractor of the exon annotations at 500 bp distance to the Transcription end site (TES) extracts / converts so that the regions match 500bp or less
-	input
-	perl $0 ~/Downloads/Homo_sapiens.GRCh37.75.gtf > ~/Downloads/Homo_sapiens.GRCh37.75.TES500.gff
+	
+	Simple extractor of the exon annotations at 1000 bp distance to the Transcription end site (TES) extracts / converts so that the regions match 1000bp or less. Also configurable for other sizes.
+	example
+	perl $0 ~/Downloads/Homo_sapiens.GRCh37.75.gtf 500 > ~/Downloads/Homo_sapiens.GRCh37.75.TES500.gff
 	no validation of input....
 END
 
@@ -31,15 +32,19 @@ my $script;
 ################################################################################
 #no arg cathching
 if (scalar(@ARGV)==0){
-print $use;
-exit(0);
+	print $use;
+	exit(0);
 }
 #file input#####################################################
 my $file = shift(@ARGV);
+if (scalar(@ARGV)>0){
+	$TESoffset=shift(@ARGV);
+}
+
 #my $basename = $file
 #$basename =~ s/.fluxCapacitor.txt//;
 #check max amount of fields#####################################################
-warn " ## info: interation for exon->transcript linking.\n";
+warn " ## info: iteration for exon->transcript linking.\n";
 
 open(my $in,'<', $file)or die "$0: failed to open script:'$file'!!!!\n$!\n";
 my $transcriptExonLengths;
@@ -120,16 +125,21 @@ sub readFlux {
 	my @semicolomndelimINFO;
 	@semicolomndelimINFO = split(';',$gtfParsed{"INFO"});
 	
+
+	
 	for my $element (@semicolomndelimINFO){
 		my @spacedelim = split(' ',$element);
-		if($spacedelim[0] ne "" && $spacedelim[1] ne "" && not($spacedelim[2]) ){
+		#warn "infotag:'".Dumper(\@spacedelim)."on info field:".$gtfParsed{"INFO"}." ";
+		if($spacedelim[0] ne "" && $spacedelim[1] ne "" && not(defined($spacedelim[2])) ){
 			$gtfParsed{$spacedelim[0]} = $spacedelim[1];
-		}elsif($spacedelim[0] eq "" && $spacedelim[1] ne "" && $spacedelim[2] ne "" ){
+		}elsif($spacedelim[0] eq "" && $spacedelim[1] ne "" && defined($spacedelim[2]) && $spacedelim[2] ne "" ){
 			$gtfParsed{$spacedelim[1]} = $spacedelim[2];
-		}elsif($spacedelim[0] eq "" && $spacedelim[1] ne "" && $spacedelim[2] ne "" ){
+		}elsif($spacedelim[0] eq "" && $spacedelim[1] ne "" && defined($spacedelim[2]) ne ""&& $spacedelim[2] ne "" ){
 			$gtfParsed{$spacedelim[1]} = $spacedelim[2];
+		}elsif($spacedelim[0] ne "" && $spacedelim[1] ne "" && $spacedelim[2] ne "" && defined($spacedelim[2]) && $spacedelim[2] ne "" ){
+			$gtfParsed{$spacedelim[0]} = join(' ',@spacedelim[1..(scalar(@spacedelim)-1)]);
 		}else{
-			die "incomplete datapairs in the INFO column!!!!on line: '$.'\non infotag:'".$gtfParsed{"INFO"}."'\n$!";
+			die "incomplete datapairs in the INFO column!!!!on line: '$.'\non infotag:'".Dumper(\@spacedelim)."on info field:".$gtfParsed{"INFO"}."'\n$!";
 		}	
 	}
 	return %gtfParsed;

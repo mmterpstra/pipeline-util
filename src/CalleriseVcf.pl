@@ -6,8 +6,11 @@ use Data::Dumper;
 
 my $use = <<"END";
 	$0 -c caller -i in.vcf -o out.vcf
-		add more annotations for vcfs by prepending existing records with the caller text
-		-v only conserves the callerised fields.  
+		add more annotations for vcfs by prepending existing records with the caller text.  
+	-caller/-c string as prefix to join with '.' to the altready present fields
+	-input/-i input vcf file
+	-output/-o output vcf file
+	-v only conserves the callerised fields
 END
 
 #my $caller = shift @ARGV or die " No caller option supplied. $use";
