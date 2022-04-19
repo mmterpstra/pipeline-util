@@ -162,6 +162,7 @@ made especially for 3 prime mrna-seq (lexogen) and derived protocols
 ### AdFilter.pl
  - filters on AD by count and frequency cutoffs the filters are applied directly on the sample or on top of other samples their AD values(eg. if one of the control samples has 8 reads and a frequency of 0.5 then with count 4 and freq 0.1 the effective filter is 12 reads and 0.6 freq minimum or else it is filtered). Wip considering to add a either a filter based on SD in control samples or adding a freequency multiplier...
 
-
+### InfoFieldsToGenotypeFields.pl
+ - moves stuff from the infofields to the genotype fields
 
 -----
