@@ -67,6 +67,8 @@ for my $file (@ARGV){
 			for my $field (sort { $a <=> $b } (keys(%generalFields))){
 				push(@lineout, $line[$field]);
 			}
+			#this if hook is no logner needed but still I will keep it in. This is due to some samples for which dont have the variant but still have counts for the reference
+			# and maybe low quantity alt data cause the Samples column is probably based on the non ref genotypes....
 			if(defined($headerToIndex{'Samples'})){
 				#if($line[$headerToIndex{'Samples'}] =~ m/(^$sample$|^$sample,|,$sample$|,$sample,)/){
 				
@@ -80,8 +82,21 @@ for my $file (@ARGV){
 					#warn join("\t",(@line))."\n";
 					print join("\t",(@lineout))."\n";
 				#}
+				
 			}else{
-				die "'Samples' field not found check for renaming of a gatk original samples field and/or other errors"
+				push @lineout,$sample;
+					for my $gtField (sort(keys(%GtFields))){
+						#print gt fields
+						if(defined($headerToIndex{$sample.'.'.$gtField})){
+							push @lineout,$line[$headerToIndex{$sample.'.'.$gtField}];
+						}else{
+							push @lineout,'NA';
+						}
+					}
+                                        #warn join("\t",(@line))."\n";
+                                        print join("\t",(@lineout))."\n";
+
+				#die "'Samples' field not found check for renaming of a gatk original samples field and/or other errors"
 			}
 		}
 	}
