@@ -232,10 +232,12 @@ sub ADFilterVariant {
 	#warn Dumper($self -> {'targetrecord'},$self -> {'record'})." " ;
 	#process AD by target samples in vcf
 	for my $targetsample (keys(%{$self -> {'targetrecord'} -> {'gtypes'}})){
-		#warn "The ad is seen as:"._isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'});
-		if(not(_isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}))){
-					#warn "No AD target record";
-					$passNoAdFilter++;
+		warn "The ad is seen as:"._isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'});
+		if(not(defined($self -> {'record'} -> {'gtypes'} -> {$targetsample} -> {'AD'}))){
+				$passNoAdFilter++;
+		}elsif(not(_isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}))){
+				#warn "No AD target record";
+				$passNoAdFilter++;
 		}else{
 			#warn "Chromposiseq".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
 			if(ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'}) &&
@@ -248,7 +250,16 @@ sub ADFilterVariant {
 					next if($targetsample eq $filtersample);# case to protect filtering against self
 					
 					#vcf oddities on empty targetsample fields
-					if(not(_isValidAD($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
+					if(not(defined($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
+						if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
+							$passCountFilter++;
+							#warn " ## ### Comparison ";
+						};
+						if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
+							$passFreqFilter++;
+							#warn " ## ### Comparison ";
+						};
+					}elsif(not(_isValidAD($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
 						#warn " ## ### Comparison ";
 						if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
 							$passCountFilter++;
@@ -416,8 +427,8 @@ sub FailsSimpleCountFilter {
 	#should skip the ref count and AD is assumed to be per possible allele aka REF + ALT fields and not per Gentype...
 	my $targetindex = 1;#skips the ref field
 	while ($targetindex < (scalar(@targetAD))){
-		warn "Comparison ". 
-			" count ".$targetAD[$targetindex ].">=".($self -> {'mincount'});
+		#warn "Comparison ". 
+		#	" count ".$targetAD[$targetindex ].">=".($self -> {'mincount'});
 		if($targetAD[$targetindex ] < ($self -> {'mincount'})){
 			return 1;
 		};
@@ -443,8 +454,8 @@ sub FailsSimpleFreqFilter {
 		#if($targetAD[$targetindex ] <= ($self -> {'deltacount'})){
 		#	return 0;
 		#};
-		warn "Comparison ".
-			" freq ".$targetAD[$targetindex ]/sum(@targetAD).">=".$self -> {'minfreq'};
+		#warn "Comparison ".
+		#	" freq ".$targetAD[$targetindex ]/sum(@targetAD).">=".$self -> {'minfreq'};
 		if($targetAD[$targetindex ]/sum(@targetAD) < ($self -> {'minfreq'})){
 			return 1;
 		};
@@ -507,7 +518,7 @@ sub FormatWalkTargetLineAsVcfHeader {
 		my $out;
 	
 	for my $header (@{$self -> {'headerlines'} }){
-		warn Dumper($header)." ";
+		#warn Dumper($header)." ";
 		$walk -> {'targetvcf' } -> {'handle' } -> add_header_line(\%{$header});
 	}
 	$out .= $walk -> {'targetvcf' } -> {'handle' } -> format_header();
@@ -747,7 +758,7 @@ sub ChromPosIsEq {
 		defined($self -> { 'loc2'} -> {'CHROM'}) &&
 		$self -> { 'loc1'} -> {'CHROM'} eq $self -> { 'loc2'} -> {'CHROM'} && 
 		$self -> { 'loc1'} -> {'POS'} eq $self -> { 'loc2'} -> {'POS'}){
-		warn "###\n######IsEq";
+		#warn "###\n######IsEq";
 		return 1;
 	}else{
 		return 0;
