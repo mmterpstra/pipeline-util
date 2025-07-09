@@ -66,14 +66,13 @@ sub TargetVcfReAnnotator{
 		#my $loc = $targetposbuffer -> {'current'} -> [0];
 		
 		for my $vcf (@{$vcfs}){
-			warn '60606060';
 			$vcf -> {buffer} = GetBufferedPosByLoc('vcf' => \$vcf -> {handle},'buffer' => $vcf -> {buffer}, 'loc'=>  $targetposbuffer -> {'current'} -> [0]);
 			#do some annotations
-			warn 'target='.
-				$targetposbuffer -> {'current'} -> [0] -> {'CHROM'}.':'.
-				$targetposbuffer -> {'current'} -> [0] -> {'POS'}.
-				" vcf=".$vcf -> {'buffer'} -> {'current'} -> [0] -> {'CHROM'}.':'.
-				$vcf -> {'buffer'} -> {'current'} -> [0] -> {'POS'}
+			#warn 'target='.
+			#	$targetposbuffer -> {'current'} -> [0] -> {'CHROM'}.':'.
+			#	$targetposbuffer -> {'current'} -> [0] -> {'POS'}.
+			#	" vcf=".$vcf -> {'buffer'} -> {'current'} -> [0] -> {'CHROM'}.':'.
+			#	$vcf -> {'buffer'} -> {'current'} -> [0] -> {'POS'}
 		}
 		 
 	}
@@ -226,18 +225,19 @@ sub ADFilterVariant {
 	my $self;%{$self}= @_;
 	SelfRequire(%{$self},'req'=> ['targetrecord','targetvcfhandle','record']);
 	#die Dumper($self -> {'record'}).  "  ";
-	my $passNoAdFilter = 0;
-	my $passCountFilter = 0;
-	my $passFreqFilter = 0;	
+	my $failsNoAdFilter = 0;
+	my $failsCountFilter = 0;
+	my $failsFreqFilter = 0;	
 	#warn Dumper($self -> {'targetrecord'},$self -> {'record'})." " ;
 	#process AD by target samples in vcf
 	for my $targetsample (keys(%{$self -> {'targetrecord'} -> {'gtypes'}})){
-		warn "The ad is seen as:"._isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'});
-		if(not(defined($self -> {'record'} -> {'gtypes'} -> {$targetsample} -> {'AD'}))){
-				$passNoAdFilter++;
+		#warn "The ad is seen as:"._isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'});
+		if(not(defined($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}))){
+					#warn "No AD target record";
+					$failsNoAdFilter++;
 		}elsif(not(_isValidAD($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}))){
-				#warn "No AD target record";
-				$passNoAdFilter++;
+					#warn "No AD target record";
+					$failsNoAdFilter++;
 		}else{
 			#warn "Chromposiseq".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
 			if(ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'}) &&
@@ -247,98 +247,100 @@ sub ADFilterVariant {
 				
 				#filtersample: all the samples to filter against AD count/frequency + observed frequency seen in samples
 				for my $filtersample (keys(%{$self -> {'record'} -> {'gtypes'}})){
-					next if($targetsample eq $filtersample);# case to protect filtering against self
-					
-					#vcf oddities on empty targetsample fields
-					if(not(defined($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
-						if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
-							$passCountFilter++;
-							#warn " ## ### Comparison ";
-						};
-						if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
-							$passFreqFilter++;
-							#warn " ## ### Comparison ";
-						};
-					}elsif(not(_isValidAD($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
-						#warn " ## ### Comparison ";
-						if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
-							$passCountFilter++;
-							#warn " ## ### Comparison ";
-						};
-						if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
-							$passFreqFilter++;
-							#warn " ## ### Comparison ";
-						};
+					if($targetsample eq $filtersample){
+						# case to protect filtering against self
+						#next
 					}else{
+					
+						#vcf oddities on empty targetsample fields
+						if(not(defined($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
+							if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
+								$failsCountFilter++;
+								#warn " ## ### Comparison ";
+							};
+							if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
+								$failsFreqFilter++;
+								#warn " ## ### Comparison ";
+							};
+						}elsif(not(_isValidAD($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}))){
 						#warn " ## ### Comparison ";
-						#both should be present
-						#warn "both should be present".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
-						#there 3 if statments are to speed things up
-						if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
-							$passCountFilter++;
+							if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
+								$failsCountFilter++;
+								#warn " ## ### Comparison ";
+							};
+							if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
+								$failsFreqFilter++;
+								#warn " ## ### Comparison ";
+							};
+						}else{
 							#warn " ## ### Comparison ";
-						};
-						if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
-							$passFreqFilter++;
-							#warn " ## ### Comparison ";
-						};
-						if($passCountFilter == 0 || $passFreqFilter == 0){
-							#warn " ## ### Comparison ";
-							#warn "## DELTAFILTER".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
-							#$passNoAdFilter++;#should be filtered???
-							#defined($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}) or die "Error here".Dumper($self -> {'targetrecord'}). " ";
-							#defined($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}) or die "Error here".Dumper($self -> {'record'},$self -> {'targetrecord'}). " ";
-							my @targetAD=split(',',$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}) or die "Error here".Dumper($self -> {'targetrecord'}). " ";
-							my @targetALT= @{$self -> {'targetrecord'} -> {'ALT'}};
-							my @filterAD=split(',',$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}) or die "Error here".Dumper($self -> {'record'}). " ";
-							my @filterALT= @{$self -> {'record'} -> {'ALT'}};
+							#both should be present
+							#warn "both should be present".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
+							#there 3 if statments are to speed things up
+							if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
+								$failsCountFilter++;
+								#warn " ## ### Comparison ";
+							};
+							if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
+								$failsFreqFilter++;
+								#warn " ## ### Comparison ";
+							};
+							if($failsCountFilter == 0 || $failsFreqFilter == 0){
+								#warn " ## ### Comparison ";
+								#warn "## DELTAFILTER".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
+								#$passNoAdFilter++;#should be filtered???
+								#defined($self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}) or die "Error here".Dumper($self -> {'targetrecord'}). " ";
+								#defined($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}) or die "Error here".Dumper($self -> {'record'},$self -> {'targetrecord'}). " ";
+								my @targetAD=split(',',$self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}) or die "Error here".Dumper($self -> {'targetrecord'}). " ";
+								my @targetALT= @{$self -> {'targetrecord'} -> {'ALT'}};
+								my @filterAD=split(',',$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'}) or die "Error here".Dumper($self -> {'record'}). " ";
+								my @filterALT= @{$self -> {'record'} -> {'ALT'}};
 
-							#warn "No AD and filter AD record";
+								#warn "No AD and filter AD record";
 
-							#next if($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq '.' || 
-							#	$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'record'} -> {'ALT'}}));
+								#next if($self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq '.' || 
+								#	$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'record'} -> {'ALT'}}));
 
-							my $targetindex = 0;
-							while ($targetindex < scalar(@targetALT)){
-								#warn "loop1";
-								
-								my $filterindex = 0;
-								#should be cleaned with my $filterindex = GetFilterIndex('alt'=>$targetAlt[$targetindex],'filteralt'=> \@filterALT); 
-								while ($filterindex < scalar(@filterALT)){
-									#warn "loop2";
+								my $targetindex = 0;
+								while ($targetindex < scalar(@targetALT)){
+									#warn "loop1";
 									
-									#warn "#!!Comparison ".$targetALT[$targetindex ]."vs". $filterALT[$filterindex]. 
-									#	" count ".$targetAD[$targetindex + 1 ].">=".($self -> {'deltacount'} + $filterAD[$filterindex + 1 ]);
-									#warn "#!!Comparison ".$targetALT[$targetindex ]."vs". $filterALT[$filterindex]. 
-									#	" freq ".$targetAD[$targetindex + 1 ]/sum(@targetAD).">=". ($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD));
-									#warn "#!!Comparison ".$filterAD[$filterindex + 1].sum(@filterAD).($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD));
-									#filter for count
-									if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex  + 1] < ($self -> {'deltacount'} + $filterAD[$filterindex + 1]) ){
-										$passCountFilter++;
+									my $filterindex = 0;
+									#should be cleaned with my $filterindex = GetFilterIndex('alt'=>$targetAlt[$targetindex],'filteralt'=> \@filterALT); 
+									while ($filterindex < scalar(@filterALT)){
+										#warn "loop2";
+										
+										#warn "#!!Comparison ".$targetALT[$targetindex ]."vs". $filterALT[$filterindex]. 
+										#	" count ".$targetAD[$targetindex + 1 ].">=".($self -> {'deltacount'} + $filterAD[$filterindex + 1 ]);
+										#warn "#!!Comparison ".$targetALT[$targetindex ]."vs". $filterALT[$filterindex]. 
+										#	" freq ".$targetAD[$targetindex + 1 ]/sum(@targetAD).">=". ($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD));
+										#warn "#!!Comparison ".$filterAD[$filterindex + 1].sum(@filterAD).($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD));
+										#filter for count
+										if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex  + 1] < ($self -> {'deltacount'} + $filterAD[$filterindex + 1]) ){
+											$failsCountFilter++;
+										}
+										#filter for freq
+										if($targetALT[$targetindex] eq $filterALT[$filterindex] && 
+											($targetAD[$targetindex + 1]/sum(@targetAD)) < ($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD)) ){						
+											$failsFreqFilter++;
+										}
+										$filterindex++;
 									}
-									#filter for freq
-									if($targetALT[$targetindex] eq $filterALT[$filterindex] && 
-										($targetAD[$targetindex + 1]/sum(@targetAD)) < ($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD)) ){						
-										$passFreqFilter++;
-									}
-									$filterindex++;
+									$targetindex++;
 								}
-								$targetindex++;
+								
 							}
 							
 						}
-						
-					
 					}
-
 				}
 			}else{
 				#warn " Comparison chromposref not matched ".Dumper($self -> {'targetrecord'}  -> {'CHROM'},$self -> {'targetrecord'}  -> {'POS'})."vs". Dumper($self -> {'record'} -> {'CHROM'}, $self -> {'record'} -> {'POS'});
 				if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
-					$passCountFilter++;
+					$failsCountFilter++;
 				};
 				if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
-					$passFreqFilter++;
+					$failsFreqFilter++;
 				};
 			}
 		}
@@ -354,14 +356,14 @@ sub ADFilterVariant {
 #			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"NoAD");
 #		}
 #	}
-	if($passCountFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),'ADDeltaCountlt'.$self -> {'deltacount'}) == -1){
+	if($failsCountFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),'ADDeltaCountlt'.$self -> {'deltacount'}) == -1){
 		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){							
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ('ADDeltaCountlt'.$self -> {'deltacount'});	
 		}else{
 			push(@{$self -> {'targetrecord'} -> {'FILTER'}},'ADDeltaCountlt'.$self -> {'deltacount'});
 		}
 	}
-	if($passFreqFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"ADDeltaFrequencylt".$self -> {'deltafrequency'}) == -1){
+	if($failsFreqFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"ADDeltaFrequencylt".$self -> {'deltafrequency'}) == -1){
 		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("ADDeltaFrequencylt".$self -> {'deltafrequency'});	
 		}else{
@@ -401,9 +403,9 @@ sub ADFilterVariant {
 
 sub _isValidAD {
 	my $AD;
-	$AD = $_[0] or die "Needs string AD field input.";
+	$AD = $_[0] or confess "Needs string AD field input.";
 	my @DepthByAlle= split(',',$AD);
-	warn Dumper(sum( map { if($_ eq '.'){$_ = 0}   } @DepthByAlle))." ";
+	#warn Dumper(sum( map { if($_ eq '.'){$_ = 0}   } @DepthByAlle))." ";
 	if(not(defined($AD))){
 		return 0;
 	}elsif($AD eq '.'|| $AD eq ".".",." x scalar(@DepthByAlle)){
@@ -591,15 +593,15 @@ sub WalkToTarget{
 		#Goes till
 		if(ChromPosIsNextOrEqual('curr' => $self -> {'pos'}, 'next' => $targetposbuffer -> {'next'} -> [0], 'vcf' => $targetvcf)){
 			
-			warn Dumper({'CHROM' => $targetposbuffer -> {'current'} -> [0] -> {'CHROM'},'POS' => $targetposbuffer -> {'current'} -> [0] -> {'POS'}}) . "  ";
+			#warn Dumper({'CHROM' => $targetposbuffer -> {'current'} -> [0] -> {'CHROM'},'POS' => $targetposbuffer -> {'current'} -> [0] -> {'POS'}}) . "  ";
 			
 			$continue = 0;
 			
 		}
 		
 	}
-	warn Dumper(GetLoc(%{$targetposbuffer -> {'current'} -> [0]}));
-	warn "done ";
+	#warn Dumper(GetLoc(%{$targetposbuffer -> {'current'} -> [0]}));
+	#warn "done ";
 }
 sub SelfRequire {
         #calls like SelfRequire(%{$self}, 'req'=> ['vcf', 'fields']);
@@ -809,7 +811,7 @@ sub ChromPosIsNextOrEqual  {
 	SelfRequire(%{$self},'req'=> ['curr','next','vcf']);
 	#carp "loc1".Dumper($self -> { 'loc1'})."loc2".Dumper($self -> { 'loc2'});
 	if(ChromPosIsNext(%{$self}) || ChromPosIsEq(%{$self})){
-		warn 'ChromPosIsNext::ret='.1;
+		#warn 'ChromPosIsNext::ret='.1;
 		return 1;
 	}else{
 		return 0;

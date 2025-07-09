@@ -25,7 +25,7 @@ main("target"=>$targetvcf, "vcfs"=>\@ARGV ,'opts'=> \%opts);
 sub main{
 	my $self;
 	%{$self} = @_;
-	my $vcfin =$self -> {'target'} or die "$use";#'/home/terpstramm/Downloads/s12-193.annotated.vcf';
+	my $vcfin =$self -> {'target'} or die "$use";
 	die "TARGETVCF does not exist. Arg:'$vcfin' " if(not(-e $vcfin));
 	my $out =*STDOUT;
 
