@@ -81,9 +81,10 @@ sub TargetVcfReAnnotator{
 
 }
 sub NewWalk{
-	#run like 	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
+	#run like 	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}}, copy_annot =>0);
 	# this opens the relavant files and stores the data 
-	my $self ;%{$self}= @_ ;
+
+	my $self ;$self -> {'copy_annot'}=0; %{$self}= @_ ;
 	SelfRequire(%{$self},'req'=> ['targetvcf', 'vcflist']);
 	my $walk;
         $walk -> {'targetvcf' } -> {'file' } = $self -> {'targetvcf'};
@@ -95,6 +96,21 @@ sub NewWalk{
 	for my $vcf (@{$self -> {'vcflist'}}){
 		push(@{$walk -> {'vcfs' }},{'file' => $vcf,'handle'=>Vcf->new(file=> $vcf)});
 	        $walk -> {'vcfs' } -> [-1] -> {handle}->parse_header();
+			#the folllowing block copies annotations to header if needed. 
+			if($self -> {'copy_annot'}){
+				for my $field (("INFO", "FORMAT")){
+					for my $header (keys(%{$walk -> {'vcfs' } -> [-1] -> {'handle'}->{'header'}->{$field}})){
+						if(not(defined($walk -> {'targetvcf' } -> {'handle' } -> {$field} -> {$header}))){
+							#add header line here
+							$walk -> {'targetvcf' } -> {'handle' } -> add_header_line(
+							$walk -> {'vcfs' } -> [-1] -> {'handle'} -> {'header'} -> {$field}-> {$header});
+							#append self to blabla
+							#push(@{$walk -> {'targetvcf' } -> {'handle' } -> {'header_lines'}}, ${$walk -> {'targetvcf' } -> {'handle' } -> {'header'} -> {$field} -> {$header}});
+						}
+					}
+				} 
+			}
+			die Dumper($walk -> {'targetvcf' } -> {'handle' });
 		$walk -> {'vcfs' } -> [-1] -> {buffer} = {'current' => [],'next' => [$walk -> {'vcfs' } -> [-1] -> {handle} -> next_data_hash()]};
 	}
 	
