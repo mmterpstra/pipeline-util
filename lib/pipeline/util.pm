@@ -37,7 +37,7 @@ our @EXPORT = qw(
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.20-5-ga0a29bb";
+our $VERSION = "0.8.21";
 
 # Preloaded methods go here.
 # Below is stub documentation for your module. You'd better edit it!
@@ -93,13 +93,13 @@ sub NewWalk{
 	$walk -> {'targetvcf' } -> {'buffer' } = {'current' => [],'next' => [ $walk -> {'targetvcf' } -> {handle} -> next_data_hash() ] };#GetBufferedPosNext('vcf' =>\$targetvcf,'buffer' => $targetposbuffer) or die "Empty vcf!! Cannot parse";
 
 	#$walk -> {'vcfs' };
-	for my $vcf (@{$self -> {'vcflist'}}){
+	for my $vcf (sort(@{$self -> {'vcflist'}})){
 		push(@{$walk -> {'vcfs' }},{'file' => $vcf,'handle'=>Vcf->new(file=> $vcf)});
 	        $walk -> {'vcfs' } -> [-1] -> {handle}->parse_header();
 			#the folllowing block copies annotations to header if needed. 
 			if($self -> {'copy_annot'}){
 				for my $field (("INFO", "FORMAT")){
-					for my $header (keys(%{$walk -> {'vcfs' } -> [-1] -> {'handle'}->{'header'}->{$field}})){
+					for my $header (sort(keys(%{$walk -> {'vcfs' } -> [-1] -> {'handle'}->{'header'}->{$field}}))){
 						if(not(defined($walk -> {'targetvcf' } -> {'handle' } -> {$field} -> {$header}))){
 							#add header line here
 							$walk -> {'targetvcf' } -> {'handle' } -> add_header_line(
@@ -110,7 +110,7 @@ sub NewWalk{
 					}
 				} 
 			}
-			die Dumper($walk -> {'targetvcf' } -> {'handle' });
+			#die Dumper($walk -> {'targetvcf' } -> {'handle' });
 		$walk -> {'vcfs' } -> [-1] -> {buffer} = {'current' => [],'next' => [$walk -> {'vcfs' } -> [-1] -> {handle} -> next_data_hash()]};
 	}
 	
