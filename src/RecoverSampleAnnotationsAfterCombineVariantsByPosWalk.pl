@@ -35,7 +35,7 @@ sub main{
 	@{$resource -> {'invcfs'}} = @_;
 	warn Dumper({'targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}}});
 	my $walkdata;
-	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}});
+	$walkdata = NewWalk('targetvcf'=> $vcfin,'vcflist'=> \@{$resource -> {'invcfs'}}, 'copy_annot'=> 1);
 	print FormatWalkTargetLineAsVcfHeader('walk' =>  $walkdata);
 	while(WalkToNext('walk'=> $walkdata)){
 		#die Dumper($walkdata)."here"
