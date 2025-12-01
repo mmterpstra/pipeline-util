@@ -148,12 +148,14 @@
 ##FILTER=<ID=NoAD,Description="No Allele Depth values to filter on">
 ##FILTER=<ID=ADDeltaCountlt4,Description="LowADCount">
 ##FILTER=<ID=ADDeltaFrequencylt0.1,Description="LowADfrequency">
+##FILTER=<ID=ADNormFrequency0.4,Description="Too high frequency in normal indicating probably het or hom in normal samples">
+##FILTER=<ID=ADMultFrequency2,Description="Frequency multiplier compared to normal (ftumor < fnormal * multiplier) [defaults to 2]">
 ##FILTER=<ID=PASS,Description="All filters passed">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1
 1	100	.	N	AGAG	30	PASS	.	GT:AD:DP	0/0:.:100
-1	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/1:101,50:101
+1	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1;ADMultFrequency2	.	GT:AD:DP	0/1:101,50:101
 1	201	.	N	AGAG	30	ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:102,10:102
-2	100	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:13,15:103
+2	100	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1;ADMultFrequency2;ADNormFrequency0.4	.	GT:AD:DP	0/0:13,15:103
 2	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:104,0:104
 2	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:105,0:105
 3	200	.	N	AGAG	30	ADDeltaCountlt4;ADDeltaFrequencylt0.1	.	GT:AD:DP	0/0:106,0:105
