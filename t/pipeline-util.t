@@ -79,6 +79,7 @@ ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
         'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/AdFilter.pl -f 0.1 -c 4 t/data/target.vcf t/data/filter.vcf ) '.
 	't/data/filtered.vcf '.
         ' &>/dev/stderr"') == 0 , 'AdFilter functional test');
+        
 #Infoformat result generated with `(ml VCFtools; perl src/InfoFieldsToGenotypeFields.pl -f DP -g test -i t/data/target_infoformat.vcf  > t/data/result_infoformat.vcf)` and inspected
 ok(system('bash -c "echo > /dev/stderr && set -e -o pipefail && '.
         'diff <(export PERL5LIB=\"blib/lib/\":$PERL5LIB && perl src/InfoFieldsToGenotypeFields.pl -f DP -g test -i t/data/target_infoformat.vcf ) '.

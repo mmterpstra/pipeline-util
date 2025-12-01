@@ -37,7 +37,7 @@ our @EXPORT = qw(
 	_formatwalkasvcflineswithfile
 );
 
-our $VERSION = "0.8.21";
+our $VERSION = "0.8.20-5-ga0a29bb-3-g1117522";
 
 # Preloaded methods go here.
 # Below is stub documentation for your module. You'd better edit it!
@@ -181,7 +181,7 @@ sub ADFilterTargetRecords {
 					
 					#annotate
 					#$walk -> {'targetvcf' }  -> {'buffer' } -> {'current'} = 
-					$targetrecord = ADFilterVariant('targetvcfhandle' => $walk -> {'targetvcf' } -> {'handle'},'targetrecord' => $targetrecord, 'record' => $record,'deltafrequency'=> $self -> {'deltafrequency'},'deltacount'=> $self -> {'deltacount'});
+					$targetrecord = ADFilterVariant('targetvcfhandle' => $walk -> {'targetvcf' } -> {'handle'},'targetrecord' => $targetrecord, 'record' => $record,'deltafrequency'=> $self -> {'deltafrequency'},'deltacount'=> $self -> {'deltacount'},'normfreq'=> $self -> {'normfreq'},'normfreqmult'=> $self -> {'normfreqmult'});
 					$annotated -> { $vcf -> {'file'} }++; 
 				}
 			}
@@ -240,10 +240,40 @@ sub ADFilterVariant {
 
 	my $self;%{$self}= @_;
 	SelfRequire(%{$self},'req'=> ['targetrecord','targetvcfhandle','record']);
+	if(not(defined($self -> {'deltafrequency'}))){
+		$self -> {'deltafrequency'} = 0.05;
+	}
+	if(not(defined($self -> {'deltacount'}))){
+		$self -> {'deltacount'} = 4;
+	}
+	if(not(defined($self -> {'mincount'}))){
+		$self -> {'mincount'} = $self -> {'deltacount'}; 
+	}
+	if(not(defined($self -> {'minfreq'}))){
+		$self -> {'minfreq'} = $self -> {'deltafrequency'};
+	}
+	#this should include some fishers exact test or similar but difficult to implement as far as I know...
+	if(not(defined($self -> {'normfreqmult'}))){
+		#hard cutoff for normal frequency mult eg filter tumor 0.2 if normal is 0.1
+		$self -> {'normfreqmult'} = 2 
+	}
+	#cutoff for normal freq
+	if(not(defined($self -> {'normfreq'}))){
+		#hard cutoff for normal frequency
+		if ($self -> {'deltafrequency'} * $self -> {'normfreqmult'} < 0.5 ){
+			$self -> {'normfreq'} = 0.5 - ($self -> {'deltafrequency'} * $self -> {'normfreqmult'});
+		}else{
+			$self -> {'normfreq'} = 0.1;
+		}
+	}
+	
 	#die Dumper($self -> {'record'}).  "  ";
 	my $failsNoAdFilter = 0;
 	my $failsCountFilter = 0;
-	my $failsFreqFilter = 0;	
+	my $failsFreqFilter = 0;
+	my $failsMultFreqFilter = 0;
+	my $failsNormFreqFilter = 0; #if any normal record has frequency above $self -> {'normfreq'} increment this and filter.
+	#my $failsNormCountFilter = 0; #wip this depends strongly on sequecing depth probs something like 
 	#warn Dumper($self -> {'targetrecord'},$self -> {'record'})." " ;
 	#process AD by target samples in vcf
 	for my $targetsample (keys(%{$self -> {'targetrecord'} -> {'gtypes'}})){
@@ -257,7 +287,7 @@ sub ADFilterVariant {
 		}else{
 			#warn "Chromposiseq".ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'});
 			if(ChromPosIsEq('loc1' => $self -> {'targetrecord'}, 'loc2' => $self -> {'record'}) &&
-				$self -> {'targetrecord'} -> {'REF'} eq $self -> {'record'} -> {'REF'}){
+				$self -> {'targetrecord'} -> {'REF'} eq $self -> {'record'} -> {'REF'} ){
 				
 				#warn " ## ### Comparison ".Dumper($self -> {'targetrecord'}  -> {'CHROM'},$self -> {'targetrecord'}  -> {'POS'})."vs". Dumper($self -> {'record'} -> {'CHROM'}, $self -> {'record'} -> {'POS'});
 				
@@ -318,6 +348,8 @@ sub ADFilterVariant {
 								#	$self -> {'record'} -> {'gtypes'} -> {$filtersample} -> {'AD'} eq ".".",." x scalar(@{$self -> {'record'} -> {'ALT'}}));
 
 								my $targetindex = 0;
+
+								#this iterates the alt combinations due first alt in target vcf sometimes matching the second alt int the record vcf. 
 								while ($targetindex < scalar(@targetALT)){
 									#warn "loop1";
 									
@@ -332,13 +364,25 @@ sub ADFilterVariant {
 										#	" freq ".$targetAD[$targetindex + 1 ]/sum(@targetAD).">=". ($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD));
 										#warn "#!!Comparison ".$filterAD[$filterindex + 1].sum(@filterAD).($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD));
 										#filter for count
-										if($targetALT[$targetindex] eq $filterALT[$filterindex] && $targetAD[$targetindex  + 1] < ($self -> {'deltacount'} + $filterAD[$filterindex + 1]) ){
+										if($targetALT[$targetindex] eq $filterALT[$filterindex] && 
+											$targetAD[$targetindex  + 1] < ($self -> {'deltacount'} + $filterAD[$filterindex + 1]) ){
 											$failsCountFilter++;
 										}
 										#filter for freq
 										if($targetALT[$targetindex] eq $filterALT[$filterindex] && 
 											($targetAD[$targetindex + 1]/sum(@targetAD)) < ($self -> {'deltafrequency'} + $filterAD[$filterindex + 1]/sum(@filterAD)) ){						
 											$failsFreqFilter++;
+										}
+										#normfreqmult failsMultFreqFilter++
+										if($targetALT[$targetindex] eq $filterALT[$filterindex] && 
+											($targetAD[$targetindex + 1]/sum(@targetAD)) < ($self -> {'normfreqmult'} * ($filterAD[$filterindex + 1]/sum(@filterAD))) ){						
+											$failsMultFreqFilter++;
+										}
+										#filter for max normal freq ($self -> {'normfreq'}) in normal sample
+										if($targetALT[$targetindex] eq $filterALT[$filterindex] &&
+											($filterAD[$filterindex + 1]/sum(@filterAD)) > $self -> {'normfreq'}
+										){
+											$failsNormFreqFilter++;
 										}
 										$filterindex++;
 									}
@@ -352,10 +396,10 @@ sub ADFilterVariant {
 				}
 			}else{
 				#warn " Comparison chromposref not matched ".Dumper($self -> {'targetrecord'}  -> {'CHROM'},$self -> {'targetrecord'}  -> {'POS'})."vs". Dumper($self -> {'record'} -> {'CHROM'}, $self -> {'record'} -> {'POS'});
-				if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'deltacount'})){
+				if(FailsSimpleCountFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'mincount' => $self -> {'mincount'})){
 					$failsCountFilter++;
 				};
-				if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'deltafrequency'})){
+				if(FailsSimpleFreqFilter('ad'=> $self -> {'targetrecord'} -> {'gtypes'} -> {$targetsample} -> {'AD'}, 'minfreq' => $self -> {'minfreq'})){
 					$failsFreqFilter++;
 				};
 			}
@@ -384,6 +428,22 @@ sub ADFilterVariant {
 			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("ADDeltaFrequencylt".$self -> {'deltafrequency'});	
 		}else{
 			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"ADDeltaFrequencylt".$self -> {'deltafrequency'});
+		}
+	}
+	#failsMultFreqFilter
+	if($failsMultFreqFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"ADMultFrequency".$self -> {'normfreqmult'}) == -1){
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("ADMultFrequency".$self -> {'normfreqmult'});	
+		}else{
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"ADMultFrequency".$self -> {'normfreqmult'});
+		}
+	}
+
+	if($failsNormFreqFilter > 0 && index(join(";",@{$self -> {'targetrecord'} -> {'FILTER'}}),"ADNormFrequency".$self -> {'normfreq'}) == -1){
+		if($self -> {'targetrecord'} -> {'FILTER'} -> [0] eq 'PASS' || $self -> {'targetrecord'} -> {'FILTER'} -> [0] eq '.'){
+			@{$self -> {'targetrecord'} -> {'FILTER'}} = ("ADNormFrequency".$self -> {'normfreq'});	
+		}else{
+			push(@{$self -> {'targetrecord'} -> {'FILTER'}},"ADNormFrequency".$self -> {'normfreq'});
 		}
 	}
 	return $self -> {'targetrecord'};
