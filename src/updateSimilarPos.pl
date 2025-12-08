@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use Vcf;
 use List::Util qw(max min);
-use List::MoreUtils qw(uniq);
+#use List::MoreUtils qw(uniq);
 use Data::Dumper;
 
 # use
@@ -118,3 +118,11 @@ sub GetSet {
 	return $self{'record'}->{'INFO'} -> {'set'};
 }
 #('record' => $x, 'sample' => $sample);
+sub uniq {
+	my @array = @_ or die "empty input";
+	my %uniq;
+	for my $val (@_){
+		$uniq{$val}=1;
+	}
+	return keys(%uniq);
+}

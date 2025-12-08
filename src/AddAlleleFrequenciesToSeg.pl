@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use Vcf;
 use List::Util qw(sum min max);
-use List::MoreUtils qw(uniq);
+#use List::MoreUtils qw(uniq);
 use Data::Dumper;
 
 #errors: somewhere an empty record is defined, counsing an undef printout;
@@ -301,4 +301,13 @@ sub SegIntersectsVcfDatahash {
 	}else{
 		die "invalid seg/vcf record???"
 	}
+}
+
+sub uniq {
+	my @array = @_ or die "empty input";
+	my %uniq;
+	for my $val (@_){
+		$uniq{$val}=1;
+	}
+	return keys(%uniq);
 }
