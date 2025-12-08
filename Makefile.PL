@@ -118,7 +118,7 @@ WriteMakefile(
 	"VERSION_FROM"      => $pm, # finds $VERSION, requires EU::MM from perl >= 5.5
 	"PREREQ_PM"         => {
 		#'Vcf' => '0.1.12b', #from vcftools
-		'List::MoreUtils' => '0.416',
+		#'List::Utils' => 'builtin',
 	}, # e.g., Module::Name => 1.1
 	"BUILD_REQUIRES" => {
 		'Test::More' => '0.47',
